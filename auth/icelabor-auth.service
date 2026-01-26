@@ -1,0 +1,23 @@
+[Unit]
+Description=IceLaborVPN Authentication Gate
+Documentation=https://github.com/icepaule/IceLaborVPN
+After=network.target guacd.service tomcat9.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /opt/icelabor/auth-gate.py
+Restart=always
+RestartSec=5
+User=www-data
+Group=www-data
+
+# Configuration via environment variables
+Environment=AUTH_LISTEN_HOST=127.0.0.1
+Environment=AUTH_LISTEN_PORT=8089
+Environment=AUTH_SESSION_TIMEOUT=28800
+Environment=GUACAMOLE_API=http://127.0.0.1:8085/guacamole/api
+# Generate with: openssl rand -hex 32
+Environment=AUTH_SECRET_KEY=
+
+[Install]
+WantedBy=multi-user.target

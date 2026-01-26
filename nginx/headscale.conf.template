@@ -1,7 +1,14 @@
 # IceLaborVPN Nginx Configuration
 # /etc/nginx/sites-available/headscale
+#
+# Environment variables to set before processing with envsubst:
+#   HEADSCALE_DOMAIN - Your headscale domain (e.g., headscale.example.com)
+#   CAPE_HOST        - Tailscale IP of CAPE server
+#   CAPE_WEB_PORT    - CAPE web port (default: 8443)
+#   COCKPIT_PORT     - Cockpit port (default: 9090)
+#   NAS_HOST         - Tailscale IP of NAS (optional)
+#   NAS_PORT         - NAS web port (default: 5001)
 
-# Rate Limiting Zones
 limit_req_zone $binary_remote_addr zone=login:10m rate=${NGINX_LOGIN_RATE:-5r/m};
 limit_req_zone $binary_remote_addr zone=general:10m rate=${NGINX_GENERAL_RATE:-30r/s};
 limit_conn_zone $binary_remote_addr zone=connlimit:10m;
@@ -50,9 +57,8 @@ server {
     limit_conn connlimit 20;
 
     # ==========================================================================
-    # Landing Page (public)
+    # Landing Page (PUBLIC - no auth required)
     # ==========================================================================
-
     location = / {
         root /var/www/html;
         try_files /index.html =404;
@@ -67,11 +73,31 @@ server {
     }
 
     # ==========================================================================
-    # Guacamole - HTML5 Remote Access
+    # Authentication Gate Service
     # ==========================================================================
+    location /auth/ {
+        proxy_pass http://127.0.0.1:8089/auth/;
+        proxy_http_version 1.1;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+    }
 
-    # Login endpoint with strict rate limiting
-    location /guacamole/api/tokens {
+    # Internal auth verification endpoint
+    location = /auth/verify {
+        internal;
+        proxy_pass http://127.0.0.1:8089/auth/verify;
+        proxy_pass_request_body off;
+        proxy_set_header Content-Length "";
+        proxy_set_header X-Original-URI $request_uri;
+        proxy_set_header Cookie $http_cookie;
+    }
+
+    # ==========================================================================
+    # Guacamole API for auth (rate-limited)
+    # ==========================================================================
+    location = /guacamole/api/tokens {
         limit_req zone=login burst=3 nodelay;
         limit_req_status 429;
         proxy_pass http://127.0.0.1:8085/guacamole/api/tokens;
@@ -82,8 +108,15 @@ server {
         proxy_set_header X-Forwarded-Proto https;
     }
 
-    # Main Guacamole application
+    # ==========================================================================
+    # ALL PROTECTED SERVICES - Require Authentication
+    # ==========================================================================
+
+    # Guacamole - HTML5 Remote Access (PROTECTED)
     location /guacamole/ {
+        auth_request /auth/verify;
+        error_page 401 = @auth_redirect_guac;
+
         limit_req zone=general burst=100 nodelay;
         proxy_pass http://127.0.0.1:8085/guacamole/;
         proxy_http_version 1.1;
@@ -99,12 +132,40 @@ server {
         client_max_body_size 1G;
     }
 
-    # ==========================================================================
-    # Web Services (via Tailscale VPN - network protected)
-    # ==========================================================================
+    # CAPE/MWDB global asset fallbacks (PROTECTED)
+    location /assets/ {
+        auth_request /auth/verify;
+        error_page 401 = @auth_redirect;
 
-    # CAPE Sandbox / MWDB
+        proxy_pass https://${CAPE_HOST}:${CAPE_WEB_PORT:-8443}/assets/;
+        proxy_http_version 1.1;
+        proxy_ssl_verify off;
+        proxy_set_header Host ${CAPE_HOST}:${CAPE_WEB_PORT:-8443};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+    }
+
+    location /api/ {
+        auth_request /auth/verify;
+        error_page 401 = @auth_redirect;
+
+        proxy_pass https://${CAPE_HOST}:${CAPE_WEB_PORT:-8443}/api/;
+        proxy_http_version 1.1;
+        proxy_ssl_verify off;
+        proxy_set_header Host ${CAPE_HOST}:${CAPE_WEB_PORT:-8443};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_read_timeout 300;
+        client_max_body_size 100M;
+    }
+
+    # CAPE Sandbox / MWDB (PROTECTED)
     location /cape/ {
+        auth_request /auth/verify;
+        error_page 401 = @auth_redirect;
+
         limit_req zone=general burst=50 nodelay;
         proxy_pass https://${CAPE_HOST}:${CAPE_WEB_PORT:-8443}/;
         proxy_http_version 1.1;
@@ -118,10 +179,43 @@ server {
         proxy_read_timeout 300;
         proxy_buffering off;
         client_max_body_size 100M;
+
+        sub_filter_once off;
+        sub_filter_types text/html application/javascript;
+        sub_filter 'href="/' 'href="/cape/';
+        sub_filter "href='/" "href='/cape/";
+        sub_filter 'src="/' 'src="/cape/';
+        sub_filter "src='/" "src='/cape/";
     }
 
-    # CAPE Cockpit
+    location /cape/assets/ {
+        auth_request /auth/verify;
+        error_page 401 = @auth_redirect;
+
+        proxy_pass https://${CAPE_HOST}:${CAPE_WEB_PORT:-8443}/assets/;
+        proxy_ssl_verify off;
+        proxy_set_header Host ${CAPE_HOST}:${CAPE_WEB_PORT:-8443};
+    }
+
+    location /cape/api/ {
+        auth_request /auth/verify;
+        error_page 401 = @auth_redirect;
+
+        proxy_pass https://${CAPE_HOST}:${CAPE_WEB_PORT:-8443}/api/;
+        proxy_ssl_verify off;
+        proxy_set_header Host ${CAPE_HOST}:${CAPE_WEB_PORT:-8443};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_read_timeout 300;
+        client_max_body_size 100M;
+    }
+
+    # CAPE Cockpit (PROTECTED)
     location /cape-cockpit/ {
+        auth_request /auth/verify;
+        error_page 401 = @auth_redirect;
+
         limit_req zone=general burst=50 nodelay;
         proxy_pass https://${CAPE_HOST}:${COCKPIT_PORT:-9090}/;
         proxy_http_version 1.1;
@@ -134,10 +228,34 @@ server {
         proxy_set_header Connection $connection_upgrade;
         proxy_read_timeout 3600;
         proxy_buffering off;
+
+        sub_filter_once off;
+        sub_filter_types text/html application/javascript;
+        sub_filter '<base href="/">' '<base href="/cape-cockpit/">';
+        sub_filter 'href="/cockpit/' 'href="/cape-cockpit/cockpit/';
+        sub_filter "href='/cockpit/" "href='/cape-cockpit/cockpit/";
+        sub_filter 'src="/cockpit/' 'src="/cape-cockpit/cockpit/';
+        sub_filter "src='/cockpit/" "src'/cape-cockpit/cockpit/";
     }
 
-    # Gateway Cockpit (local)
+    location /cape-cockpit/cockpit/ {
+        auth_request /auth/verify;
+        error_page 401 = @auth_redirect;
+
+        proxy_pass https://${CAPE_HOST}:${COCKPIT_PORT:-9090}/cockpit/;
+        proxy_ssl_verify off;
+        proxy_set_header Host ${CAPE_HOST}:${COCKPIT_PORT:-9090};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_buffering off;
+    }
+
+    # Gateway Cockpit - local (PROTECTED)
     location /gateway/ {
+        auth_request /auth/verify;
+        error_page 401 = @auth_redirect;
+
         limit_req zone=general burst=50 nodelay;
         proxy_pass https://127.0.0.1:9090/;
         proxy_http_version 1.1;
@@ -150,12 +268,63 @@ server {
         proxy_set_header Connection $connection_upgrade;
         proxy_read_timeout 3600;
         proxy_buffering off;
+
+        sub_filter_once off;
+        sub_filter_types text/html application/javascript;
+        sub_filter '<base href="/">' '<base href="/gateway/">';
+        sub_filter 'href="/cockpit/' 'href="/gateway/cockpit/';
+        sub_filter "href='/cockpit/" "href='/gateway/cockpit/";
+        sub_filter 'src="/cockpit/' 'src="/gateway/cockpit/';
+        sub_filter "src='/cockpit/" "src'/gateway/cockpit/";
+    }
+
+    location /gateway/cockpit/ {
+        auth_request /auth/verify;
+        error_page 401 = @auth_redirect;
+
+        proxy_pass https://127.0.0.1:9090/cockpit/;
+        proxy_ssl_verify off;
+        proxy_set_header Host 127.0.0.1:9090;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_buffering off;
+    }
+
+    # Synology NAS (PROTECTED) - uncomment if NAS_HOST is set
+    # location /nas/ {
+    #     auth_request /auth/verify;
+    #     error_page 401 = @auth_redirect;
+    #
+    #     limit_req zone=general burst=50 nodelay;
+    #     proxy_pass https://${NAS_HOST}:${NAS_PORT:-5001}/;
+    #     proxy_http_version 1.1;
+    #     proxy_ssl_verify off;
+    #     proxy_set_header Host ${NAS_HOST}:${NAS_PORT:-5001};
+    #     proxy_set_header X-Real-IP $remote_addr;
+    #     proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    #     proxy_set_header X-Forwarded-Proto https;
+    #     proxy_set_header Upgrade $http_upgrade;
+    #     proxy_set_header Connection $connection_upgrade;
+    #     proxy_read_timeout 3600;
+    #     proxy_buffering off;
+    #     client_max_body_size 10G;
+    # }
+
+    # ==========================================================================
+    # Auth redirect handlers
+    # ==========================================================================
+    location @auth_redirect {
+        return 302 /auth/login?redirect=$request_uri;
+    }
+
+    location @auth_redirect_guac {
+        return 302 /auth/login?redirect=/guacamole/;
     }
 
     # ==========================================================================
-    # Headscale API (for Tailscale clients)
+    # Headscale API (for Tailscale clients - no auth needed)
     # ==========================================================================
-
     location /ts2021 {
         proxy_pass http://127.0.0.1:8080;
         proxy_http_version 1.1;
