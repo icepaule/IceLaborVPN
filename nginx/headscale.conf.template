@@ -211,6 +211,97 @@ server {
         client_max_body_size 100M;
     }
 
+    # ==========================================================================
+    # CAPEv2 Sandbox Dashboard (PROTECTED)
+    # ==========================================================================
+    location /sandbox/ {
+        auth_request /auth/verify;
+        error_page 401 = @auth_redirect;
+
+        limit_req zone=general burst=50 nodelay;
+        proxy_pass https://${CAPE_HOST}:${CAPE_SANDBOX_PORT:-443}/;
+        proxy_http_version 1.1;
+        proxy_ssl_verify off;
+        proxy_set_header Host ${CAPE_HOST};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_set_header Upgrade $http_upgrade;
+        proxy_set_header Connection $connection_upgrade;
+        proxy_read_timeout 300;
+        proxy_buffering off;
+        client_max_body_size 100M;
+
+        sub_filter_once off;
+        sub_filter_types text/html application/javascript text/javascript;
+        sub_filter 'href="/' 'href="/sandbox/';
+        sub_filter "href='/" "href='/sandbox/";
+        sub_filter 'src="/' 'src="/sandbox/';
+        sub_filter "src='/" "src'/sandbox/";
+        sub_filter 'action="/' 'action="/sandbox/';
+        sub_filter "action='/" "action'/sandbox/";
+    }
+
+    location /sandbox/static/ {
+        auth_request /auth/verify;
+        error_page 401 = @auth_redirect;
+
+        proxy_pass https://${CAPE_HOST}:${CAPE_SANDBOX_PORT:-443}/static/;
+        proxy_ssl_verify off;
+        proxy_set_header Host ${CAPE_HOST};
+    }
+
+    location /sandbox/analysis/ {
+        auth_request /auth/verify;
+        error_page 401 = @auth_redirect;
+
+        proxy_pass https://${CAPE_HOST}:${CAPE_SANDBOX_PORT:-443}/analysis/;
+        proxy_ssl_verify off;
+        proxy_set_header Host ${CAPE_HOST};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_read_timeout 300;
+    }
+
+    location /sandbox/submit/ {
+        auth_request /auth/verify;
+        error_page 401 = @auth_redirect;
+
+        proxy_pass https://${CAPE_HOST}:${CAPE_SANDBOX_PORT:-443}/submit/;
+        proxy_ssl_verify off;
+        proxy_set_header Host ${CAPE_HOST};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_read_timeout 300;
+        client_max_body_size 100M;
+    }
+
+    location /sandbox/apiv2/ {
+        auth_request /auth/verify;
+        error_page 401 = @auth_redirect;
+
+        proxy_pass https://${CAPE_HOST}:${CAPE_SANDBOX_PORT:-443}/apiv2/;
+        proxy_ssl_verify off;
+        proxy_set_header Host ${CAPE_HOST};
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto https;
+        proxy_read_timeout 300;
+        client_max_body_size 100M;
+    }
+
+    # Fallback for CAPE static files at root
+    location /static/ {
+        auth_request /auth/verify;
+        error_page 401 = @auth_redirect;
+
+        proxy_pass https://${CAPE_HOST}:${CAPE_SANDBOX_PORT:-443}/static/;
+        proxy_ssl_verify off;
+        proxy_set_header Host ${CAPE_HOST};
+    }
+
     # CAPE Cockpit (PROTECTED)
     location /cape-cockpit/ {
         auth_request /auth/verify;

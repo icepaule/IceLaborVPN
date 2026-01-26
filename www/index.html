@@ -18,7 +18,7 @@
             padding: 20px;
             color: #fff;
         }
-        .container { max-width: 900px; width: 100%; }
+        .container { max-width: 1100px; width: 100%; }
         .header { text-align: center; margin-bottom: 30px; }
         .logo { font-size: 3em; margin-bottom: 10px; }
         h1 { font-size: 2.5em; margin-bottom: 10px; background: linear-gradient(90deg, #64ffda, #48bb78); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
@@ -91,7 +91,7 @@
         .auth-notice p { color: #64ffda; font-size: 0.9em; }
 
         /* Service Cards */
-        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 20px; margin-bottom: 30px; }
         .card {
             background: rgba(255,255,255,0.03);
             border: 1px solid rgba(100,255,218,0.1);
@@ -121,15 +121,15 @@
         }
         .card:hover::before { transform: scaleX(1); }
         .card-icon { font-size: 2.5em; margin-bottom: 15px; }
-        .card h3 { color: #fff; font-size: 1.3em; margin-bottom: 10px; }
-        .card p { color: #8892b0; font-size: 0.9em; line-height: 1.5; flex-grow: 1; }
+        .card h3 { color: #fff; font-size: 1.2em; margin-bottom: 10px; }
+        .card p { color: #8892b0; font-size: 0.85em; line-height: 1.5; flex-grow: 1; }
         .card .badge {
             display: inline-block;
             background: rgba(100,255,218,0.1);
             color: #64ffda;
             padding: 4px 10px;
             border-radius: 20px;
-            font-size: 0.75em;
+            font-size: 0.7em;
             margin-top: 15px;
             font-family: monospace;
         }
@@ -195,39 +195,47 @@
                 <span class="lock-badge">🔒</span>
                 <div class="card-icon">🖥️</div>
                 <h3>Remote Console</h3>
-                <p>SSH, VNC and RDP access to lab systems directly in your browser. No client installation required.</p>
+                <p>SSH, VNC and RDP access to lab systems directly in your browser.</p>
                 <span class="badge">SSH / VNC / RDP</span>
             </a>
 
-            <a href="/cape/" class="card" id="capeCard">
+            <a href="/sandbox/" class="card" id="sandboxCard">
                 <span class="lock-badge">🔒</span>
                 <div class="card-icon">🔬</div>
                 <h3>CAPE Sandbox</h3>
-                <p>Malware analysis dashboard. Upload samples, view reports, extract IOCs and configurations.</p>
-                <span class="badge">Malware Analysis</span>
+                <p>Malware analysis dashboard. Submit samples, view analysis reports and extracted configs.</p>
+                <span class="badge">CAPEv2</span>
+            </a>
+
+            <a href="/cape/" class="card" id="mwdbCard">
+                <span class="lock-badge">🔒</span>
+                <div class="card-icon">🗄️</div>
+                <h3>MWDB</h3>
+                <p>Malware Database. Search samples, IOCs, configurations and analysis artifacts.</p>
+                <span class="badge">Malware DB</span>
             </a>
 
             <a href="/cape-cockpit/" class="card" id="capeCockpitCard">
                 <span class="lock-badge">🔒</span>
                 <div class="card-icon">⚙️</div>
-                <h3>CAPE Management</h3>
-                <p>Server administration for the analysis system. Services, containers, logs and system status.</p>
-                <span class="badge">System Admin</span>
+                <h3>CAPE Admin</h3>
+                <p>Server administration. Services, containers, logs and system status.</p>
+                <span class="badge">Cockpit</span>
             </a>
 
             <a href="/gateway/" class="card" id="gatewayCard">
                 <span class="lock-badge">🔒</span>
                 <div class="card-icon">🌐</div>
-                <h3>Gateway Management</h3>
-                <p>VPN gateway administration. Headscale, Guacamole, Nginx monitoring and configuration.</p>
-                <span class="badge">VPN Admin</span>
+                <h3>Gateway Admin</h3>
+                <p>VPN gateway administration. Headscale, Guacamole and Nginx monitoring.</p>
+                <span class="badge">Cockpit</span>
             </a>
 
             <a href="/nas/" class="card" id="nasCard">
                 <span class="lock-badge">🔒</span>
                 <div class="card-icon">💾</div>
                 <h3>NAS Storage</h3>
-                <p>Synology DiskStation management. File sharing, backups, and storage administration.</p>
+                <p>Synology DiskStation. File sharing, backups and storage management.</p>
                 <span class="badge">Synology DSM</span>
             </a>
         </div>
@@ -246,7 +254,7 @@
             const authText = document.getElementById('authText');
             const loginBtn = document.getElementById('loginBtn');
             const logoutBtn = document.getElementById('logoutBtn');
-            const protectedCards = ['guacCard', 'capeCard', 'capeCockpitCard', 'gatewayCard', 'nasCard'];
+            const protectedCards = ['guacCard', 'sandboxCard', 'mwdbCard', 'capeCockpitCard', 'gatewayCard', 'nasCard'];
 
             try {
                 const response = await fetch('/auth/status');
