@@ -1,0 +1,114 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 650" font-family="Inter, -apple-system, sans-serif">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#1a1a2e"/>
+      <stop offset="100%" style="stop-color:#16213e"/>
+    </linearGradient>
+    <linearGradient id="boxGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" style="stop-color:#2d3a5a"/>
+      <stop offset="100%" style="stop-color:#1f2940"/>
+    </linearGradient>
+    <linearGradient id="greenGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" style="stop-color:#64ffda"/>
+      <stop offset="100%" style="stop-color:#48bb78"/>
+    </linearGradient>
+    <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="8" flood-color="#000" flood-opacity="0.3"/>
+    </filter>
+    <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
+      <polygon points="0 0, 10 3.5, 0 7" fill="#64ffda"/>
+    </marker>
+  </defs>
+
+  <!-- Background -->
+  <rect width="900" height="650" fill="url(#bgGrad)"/>
+
+  <!-- Internet Zone -->
+  <rect x="50" y="20" width="800" height="60" rx="8" fill="#3d1a1a" stroke="#e74c3c" stroke-width="2" filter="url(#shadow)"/>
+  <text x="450" y="55" text-anchor="middle" fill="#e74c3c" font-size="18" font-weight="600">INTERNET (Untrusted Zone)</text>
+  <circle cx="80" cy="50" r="8" fill="#e74c3c"/>
+
+  <!-- HTTPS Arrow -->
+  <line x1="450" y1="80" x2="450" y2="130" stroke="#64ffda" stroke-width="3" marker-end="url(#arrowhead)"/>
+  <rect x="380" y="95" width="140" height="24" rx="4" fill="#1a1a2e"/>
+  <text x="450" y="112" text-anchor="middle" fill="#64ffda" font-size="12" font-weight="500">HTTPS (TLS 1.3)</text>
+
+  <!-- DMZ Zone -->
+  <rect x="50" y="140" width="800" height="260" rx="12" fill="url(#boxGrad)" stroke="#64ffda" stroke-width="2" filter="url(#shadow)"/>
+  <text x="70" y="170" fill="#64ffda" font-size="16" font-weight="600">IceLaborVPN Gateway (DMZ)</text>
+  <circle cx="830" cy="160" r="8" fill="#f1c40f"/>
+
+  <!-- Nginx Box -->
+  <rect x="80" y="190" width="180" height="100" rx="8" fill="#2c3e50" stroke="#3498db" stroke-width="2"/>
+  <text x="170" y="220" text-anchor="middle" fill="#fff" font-size="14" font-weight="600">Nginx</text>
+  <text x="170" y="245" text-anchor="middle" fill="#8892b0" font-size="11">Reverse Proxy</text>
+  <text x="170" y="262" text-anchor="middle" fill="#8892b0" font-size="10">TLS 1.3 | Rate Limit</text>
+  <text x="170" y="278" text-anchor="middle" fill="#8892b0" font-size="10">Security Headers</text>
+
+  <!-- Guacamole Box -->
+  <rect x="290" y="190" width="200" height="100" rx="8" fill="#2c3e50" stroke="#9b59b6" stroke-width="2"/>
+  <text x="390" y="220" text-anchor="middle" fill="#fff" font-size="14" font-weight="600">Apache Guacamole</text>
+  <text x="390" y="245" text-anchor="middle" fill="#8892b0" font-size="11">HTML5 Gateway</text>
+  <text x="390" y="262" text-anchor="middle" fill="#8892b0" font-size="10">TOTP/2FA | PostgreSQL</text>
+  <text x="390" y="278" text-anchor="middle" fill="#8892b0" font-size="10">Session Recording</text>
+
+  <!-- Fail2ban Box -->
+  <rect x="520" y="190" width="150" height="100" rx="8" fill="#2c3e50" stroke="#e74c3c" stroke-width="2"/>
+  <text x="595" y="220" text-anchor="middle" fill="#fff" font-size="14" font-weight="600">Fail2ban</text>
+  <text x="595" y="245" text-anchor="middle" fill="#8892b0" font-size="11">IPS</text>
+  <text x="595" y="262" text-anchor="middle" fill="#8892b0" font-size="10">Auto IP-Block</text>
+  <text x="595" y="278" text-anchor="middle" fill="#8892b0" font-size="10">Pushover Alerts</text>
+
+  <!-- Headscale Box -->
+  <rect x="700" y="190" width="130" height="100" rx="8" fill="#2c3e50" stroke="#f39c12" stroke-width="2"/>
+  <text x="765" y="220" text-anchor="middle" fill="#fff" font-size="14" font-weight="600">Headscale</text>
+  <text x="765" y="245" text-anchor="middle" fill="#8892b0" font-size="11">VPN Control</text>
+  <text x="765" y="262" text-anchor="middle" fill="#8892b0" font-size="10">WireGuard</text>
+  <text x="765" y="278" text-anchor="middle" fill="#8892b0" font-size="10">Mesh Network</text>
+
+  <!-- Arrows between components -->
+  <line x1="260" y1="240" x2="290" y2="240" stroke="#64ffda" stroke-width="2" marker-end="url(#arrowhead)"/>
+  <line x1="490" y1="240" x2="520" y2="240" stroke="#64ffda" stroke-width="2"/>
+  <path d="M 390 290 L 390 320 L 765 320 L 765 290" fill="none" stroke="#64ffda" stroke-width="2" stroke-dasharray="5,5"/>
+
+  <!-- Cockpit Box -->
+  <rect x="80" y="310" width="180" height="70" rx="8" fill="#2c3e50" stroke="#27ae60" stroke-width="2"/>
+  <text x="170" y="340" text-anchor="middle" fill="#fff" font-size="14" font-weight="600">Cockpit</text>
+  <text x="170" y="362" text-anchor="middle" fill="#8892b0" font-size="10">System Monitoring</text>
+
+  <!-- WireGuard Arrow -->
+  <line x1="765" y1="400" x2="765" y2="450" stroke="#f39c12" stroke-width="3" marker-end="url(#arrowhead)"/>
+  <rect x="680" y="415" width="170" height="24" rx="4" fill="#1a1a2e"/>
+  <text x="765" y="432" text-anchor="middle" fill="#f39c12" font-size="12" font-weight="500">WireGuard VPN</text>
+
+  <!-- Lab Network Zone -->
+  <rect x="50" y="460" width="800" height="170" rx="12" fill="url(#boxGrad)" stroke="#27ae60" stroke-width="2" filter="url(#shadow)"/>
+  <text x="70" y="490" fill="#27ae60" font-size="16" font-weight="600">Lab Network (Tailscale Mesh - Trusted Zone)</text>
+  <circle cx="830" cy="480" r="8" fill="#27ae60"/>
+
+  <!-- CAPE Box -->
+  <rect x="80" y="510" width="180" height="100" rx="8" fill="#2c3e50" stroke="#e67e22" stroke-width="2"/>
+  <text x="170" y="545" text-anchor="middle" fill="#fff" font-size="14" font-weight="600">CAPE Sandbox</text>
+  <text x="170" y="570" text-anchor="middle" fill="#8892b0" font-size="11">Malware Analysis</text>
+  <text x="170" y="590" text-anchor="middle" fill="#8892b0" font-size="10">Automated Detonation</text>
+
+  <!-- MWDB Box -->
+  <rect x="290" y="510" width="180" height="100" rx="8" fill="#2c3e50" stroke="#3498db" stroke-width="2"/>
+  <text x="380" y="545" text-anchor="middle" fill="#fff" font-size="14" font-weight="600">MWDB</text>
+  <text x="380" y="570" text-anchor="middle" fill="#8892b0" font-size="11">Malware Database</text>
+  <text x="380" y="590" text-anchor="middle" fill="#8892b0" font-size="10">Sample Storage</text>
+
+  <!-- Analysis VMs Box -->
+  <rect x="500" y="510" width="180" height="100" rx="8" fill="#2c3e50" stroke="#9b59b6" stroke-width="2"/>
+  <text x="590" y="545" text-anchor="middle" fill="#fff" font-size="14" font-weight="600">Analysis VMs</text>
+  <text x="590" y="570" text-anchor="middle" fill="#8892b0" font-size="11">Windows / Linux</text>
+  <text x="590" y="590" text-anchor="middle" fill="#8892b0" font-size="10">Debugging Tools</text>
+
+  <!-- Cockpit Lab Box -->
+  <rect x="710" y="510" width="120" height="100" rx="8" fill="#2c3e50" stroke="#27ae60" stroke-width="2"/>
+  <text x="770" y="545" text-anchor="middle" fill="#fff" font-size="14" font-weight="600">Cockpit</text>
+  <text x="770" y="570" text-anchor="middle" fill="#8892b0" font-size="11">Lab Admin</text>
+  <text x="770" y="590" text-anchor="middle" fill="#8892b0" font-size="10">Management</text>
+
+</svg>

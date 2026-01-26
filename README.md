@@ -73,7 +73,7 @@ IceLaborVPN provides secure, browser-based remote access to isolated malware ana
 │  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌───────────┐    │
 │  │   CAPE    │  │   MWDB    │  │  Cockpit  │  │ Analysis  │    │
 │  │  Sandbox  │  │  Database │  │  WebUI    │  │    VMs    │    │
-│  │100.64.0.1 │  │100.64.0.1 │  │100.64.0.1 │  │100.64.0.x │    │
+│  │<TAILSCALE_IP> │  │<TAILSCALE_IP> │  │<TAILSCALE_IP> │  │<TAILSCALE_IP> │    │
 │  │   :8443   │  │   :8443   │  │   :9090   │  │           │    │
 │  └───────────┘  └───────────┘  └───────────┘  └───────────┘    │
 └─────────────────────────────────────────────────────────────────┘
@@ -244,7 +244,7 @@ docker logs guacamole | grep -i auth
 **Connection timeout**
 ```bash
 # Check Tailscale connectivity
-tailscale ping 100.64.0.1
+tailscale ping <TAILSCALE_IP>
 ```
 
 **Fail2ban blocking legitimate users**

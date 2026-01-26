@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="IceLaborVPN - Secure Zero-Trust Remote Access Gateway for Malware Analysis Labs. DORA compliant, MITRE ATT&CK mapped.">
+    <meta name="keywords" content="VPN, Zero-Trust, Malware Analysis, DORA, MITRE ATT&CK, Remote Access, Security">
+    <meta name="author" content="IcePorge Project">
+    <title>IceLaborVPN - Secure Remote Access for Malware Analysis Labs</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar">
+        <div class="container">
+            <a href="#" class="logo">
+                <span class="logo-icon">&#128274;</span>
+                <span class="logo-text">IceLaborVPN</span>
+            </a>
+            <ul class="nav-links">
+                <li><a href="#features">Features</a></li>
+                <li><a href="#architecture">Architektur</a></li>
+                <li><a href="#security">Sicherheit</a></li>
+                <li><a href="#compliance">Compliance</a></li>
+                <li><a href="#installation">Installation</a></li>
+                <li><a href="#operations">Betrieb</a></li>
+                <li><a href="https://github.com/icepaule/IceLaborVPN" class="btn btn-github" target="_blank">GitHub</a></li>
+            </ul>
+            <button class="mobile-menu-btn" aria-label="Menu">
+                <span></span>
+                <span></span>
+                <span></span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header class="hero">
+        <div class="container">
+            <div class="hero-content">
+                <div class="badges">
+                    <span class="badge badge-success">MIT License</span>
+                    <span class="badge badge-primary">DORA Compliant</span>
+                    <span class="badge badge-danger">MITRE ATT&CK</span>
+                </div>
+                <h1>Secure Zero-Trust Remote Access</h1>
+                <p class="hero-subtitle">Browser-basierter Zugriff auf isolierte Malware-Analyse-Infrastruktur ohne Client-Installation. Entwickelt fuer regulierte Umgebungen mit vollstaendiger Audit-Faehigkeit.</p>
+                <div class="hero-buttons">
+                    <a href="#installation" class="btn btn-primary btn-lg">Jetzt starten</a>
+                    <a href="https://github.com/icepaule/IceLaborVPN" class="btn btn-outline btn-lg" target="_blank">
+                        <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor"><path d="M12 0c-6.626 0-12 5.373-12 12 0 5.302 3.438 9.8 8.207 11.387.599.111.793-.261.793-.577v-2.234c-3.338.726-4.033-1.416-4.033-1.416-.546-1.387-1.333-1.756-1.333-1.756-1.089-.745.083-.729.083-.729 1.205.084 1.839 1.237 1.839 1.237 1.07 1.834 2.807 1.304 3.492.997.107-.775.418-1.305.762-1.604-2.665-.305-5.467-1.334-5.467-5.931 0-1.311.469-2.381 1.236-3.221-.124-.303-.535-1.524.117-3.176 0 0 1.008-.322 3.301 1.23.957-.266 1.983-.399 3.003-.404 1.02.005 2.047.138 3.006.404 2.291-1.552 3.297-1.23 3.297-1.23.653 1.653.242 2.874.118 3.176.77.84 1.235 1.911 1.235 3.221 0 4.609-2.807 5.624-5.479 5.921.43.372.823 1.102.823 2.222v3.293c0 .319.192.694.801.576 4.765-1.589 8.199-6.086 8.199-11.386 0-6.627-5.373-12-12-12z"/></svg>
+                        GitHub Repository
+                    </a>
+                </div>
+            </div>
+            <div class="hero-image">
+                <img src="screenshots/portal-dashboard.png" alt="IceLaborVPN Dashboard" loading="lazy">
+            </div>
+        </div>
+    </header>
+
+    <!-- Executive Summary -->
+    <section class="section section-light" id="summary">
+        <div class="container">
+            <div class="section-header">
+                <h2>Executive Summary</h2>
+                <p>Fuer CISOs und Security-Entscheider</p>
+            </div>
+            <div class="summary-grid">
+                <div class="summary-card">
+                    <div class="summary-icon">&#128737;</div>
+                    <h3>Das Problem</h3>
+                    <p>Malware-Analyse erfordert isolierte Umgebungen. Der Zugriff auf diese Systeme ist oft komplex, erfordert VPN-Clients und birgt Risiken bei der Credential-Verwaltung.</p>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon">&#128161;</div>
+                    <h3>Die Loesung</h3>
+                    <p>IceLaborVPN bietet sicheren, browser-basierten Zugriff mit Multi-Faktor-Authentifizierung. Keine Software-Installation auf Client-Seite erforderlich.</p>
+                </div>
+                <div class="summary-card">
+                    <div class="summary-icon">&#9989;</div>
+                    <h3>Der Nutzen</h3>
+                    <p>Reduzierte Angriffsflaeche, vollstaendige Audit-Trails, DORA-Konformitaet und einfache Verwaltung fuer Security-Teams weltweit.</p>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Key Features -->
+    <section class="section" id="features">
+        <div class="container">
+            <div class="section-header">
+                <h2>Kernfunktionen</h2>
+                <p>Entwickelt fuer Enterprise-Sicherheitsanforderungen</p>
+            </div>
+            <div class="features-grid">
+                <div class="feature-card">
+                    <div class="feature-icon">&#128274;</div>
+                    <h3>Zero-Trust Architektur</h3>
+                    <p>WireGuard VPN-Mesh mit Headscale Control Plane. Jede Verbindung wird authentifiziert und autorisiert - kein implizites Vertrauen.</p>
+                    <ul class="feature-list">
+                        <li>Ende-zu-Ende-Verschluesselung</li>
+                        <li>Mikrosegmentierung</li>
+                        <li>Identity-basierter Zugriff</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128421;</div>
+                    <h3>HTML5 Remote Access</h3>
+                    <p>SSH, VNC und RDP direkt im Browser ueber Apache Guacamole. Keine Client-Software, keine Firewall-Ausnahmen fuer Endgeraete.</p>
+                    <ul class="feature-list">
+                        <li>Kein Client-Download</li>
+                        <li>Plattformunabhaengig</li>
+                        <li>Copy/Paste kontrolliert</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128272;</div>
+                    <h3>Multi-Faktor-Authentifizierung</h3>
+                    <p>TOTP/2FA ist obligatorisch fuer alle Benutzer. Integration mit gaengigen Authenticator-Apps (Google, Microsoft, Authy).</p>
+                    <ul class="feature-list">
+                        <li>TOTP (RFC 6238)</li>
+                        <li>Backup-Codes</li>
+                        <li>Account-Lockout</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128249;</div>
+                    <h3>Session Recording</h3>
+                    <p>Vollstaendige Aufzeichnung aller Remote-Sessions fuer Compliance und Forensik. Wiederabspielbar fuer Audits.</p>
+                    <ul class="feature-list">
+                        <li>Video-Aufzeichnung</li>
+                        <li>Keystroke-Logging</li>
+                        <li>1 Jahr Retention</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128683;</div>
+                    <h3>Brute-Force-Schutz</h3>
+                    <p>Mehrstufige Verteidigung gegen Credential-Angriffe: Rate Limiting, Guacamole-Lockout und Fail2ban IP-Blocking.</p>
+                    <ul class="feature-list">
+                        <li>5 Logins/Minute</li>
+                        <li>Automatische IP-Sperre</li>
+                        <li>Echtzeit-Alerting</li>
+                    </ul>
+                </div>
+                <div class="feature-card">
+                    <div class="feature-icon">&#128276;</div>
+                    <h3>Echtzeit-Benachrichtigungen</h3>
+                    <p>Pushover-Integration fuer sofortige Security-Alerts: Erfolgreiche Logins, Bans, erkannte Angriffe und Service-Ausfaelle.</p>
+                    <ul class="feature-list">
+                        <li>Login-Benachrichtigungen</li>
+                        <li>Angriffs-Warnungen</li>
+                        <li>Service-Monitoring</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Architecture -->
+    <section class="section section-dark" id="architecture">
+        <div class="container">
+            <div class="section-header">
+                <h2>Systemarchitektur</h2>
+                <p>Defense-in-Depth Design</p>
+            </div>
+            <div class="architecture-wrapper">
+                <div class="architecture-diagram">
+                    <img src="images/architecture.svg" alt="IceLaborVPN Architecture Diagram" loading="lazy">
+                </div>
+                <div class="architecture-description">
+                    <h3>Komponenten-Uebersicht</h3>
+                    <div class="component-list">
+                        <div class="component">
+                            <span class="component-name">Nginx</span>
+                            <span class="component-desc">Reverse Proxy mit TLS 1.3, Rate Limiting und Security Headers</span>
+                        </div>
+                        <div class="component">
+                            <span class="component-name">Guacamole</span>
+                            <span class="component-desc">HTML5 Gateway fuer SSH, VNC, RDP mit TOTP und Session Recording</span>
+                        </div>
+                        <div class="component">
+                            <span class="component-name">Headscale</span>
+                            <span class="component-desc">Self-hosted Tailscale Control Server fuer WireGuard VPN</span>
+                        </div>
+                        <div class="component">
+                            <span class="component-name">Fail2ban</span>
+                            <span class="component-desc">Intrusion Prevention mit automatischer IP-Blockierung</span>
+                        </div>
+                        <div class="component">
+                            <span class="component-name">PostgreSQL</span>
+                            <span class="component-desc">Datenbank fuer Benutzer, Sessions und Audit-Logs</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Security Features -->
+    <section class="section" id="security">
+        <div class="container">
+            <div class="section-header">
+                <h2>Sicherheitsarchitektur</h2>
+                <p>Defense in Depth</p>
+            </div>
+            <div class="security-layers">
+                <div class="security-layer">
+                    <div class="layer-header">
+                        <span class="layer-number">1</span>
+                        <h3>Netzwerksicherheit</h3>
+                    </div>
+                    <div class="layer-content">
+                        <ul>
+                            <li><strong>Firewall (UFW)</strong> - Nur Ports 80, 443 offen</li>
+                            <li><strong>Rate Limiting</strong> - 5 Logins/Min, 30 Req/Sek</li>
+                            <li><strong>Fail2ban</strong> - Automatische IP-Sperre nach 5 Fehlversuchen</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="security-layer">
+                    <div class="layer-header">
+                        <span class="layer-number">2</span>
+                        <h3>Transportverschluesselung</h3>
+                    </div>
+                    <div class="layer-content">
+                        <ul>
+                            <li><strong>TLS 1.3</strong> - Modernste Verschluesselung</li>
+                            <li><strong>HSTS</strong> - Erzwungenes HTTPS</li>
+                            <li><strong>WireGuard</strong> - Curve25519, ChaCha20-Poly1305</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="security-layer">
+                    <div class="layer-header">
+                        <span class="layer-number">3</span>
+                        <h3>Authentifizierung</h3>
+                    </div>
+                    <div class="layer-content">
+                        <ul>
+                            <li><strong>Passwort</strong> - Min. 12 Zeichen, SHA-256</li>
+                            <li><strong>TOTP/2FA</strong> - Obligatorisch fuer alle Benutzer</li>
+                            <li><strong>Session Timeout</strong> - 60 Minuten Inaktivitaet</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="security-layer">
+                    <div class="layer-header">
+                        <span class="layer-number">4</span>
+                        <h3>Autorisierung</h3>
+                    </div>
+                    <div class="layer-content">
+                        <ul>
+                            <li><strong>RBAC</strong> - Rollenbasierte Zugriffskontrolle</li>
+                            <li><strong>Connection-Level</strong> - Granulare Berechtigungen</li>
+                            <li><strong>Zeitbasiert</strong> - Optionale Zugriffszeiten</li>
+                        </ul>
+                    </div>
+                </div>
+                <div class="security-layer">
+                    <div class="layer-header">
+                        <span class="layer-number">5</span>
+                        <h3>Audit und Monitoring</h3>
+                    </div>
+                    <div class="layer-content">
+                        <ul>
+                            <li><strong>Access Logging</strong> - Alle Zugriffe protokolliert</li>
+                            <li><strong>Session Recording</strong> - Video-Aufzeichnung</li>
+                            <li><strong>Echtzeit-Alerting</strong> - Pushover-Benachrichtigungen</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Compliance Section -->
+    <section class="section section-light" id="compliance">
+        <div class="container">
+            <div class="section-header">
+                <h2>Compliance</h2>
+                <p>DORA und MITRE ATT&CK</p>
+            </div>
+
+            <div class="compliance-tabs">
+                <button class="tab-btn active" data-tab="dora">DORA Compliance</button>
+                <button class="tab-btn" data-tab="mitre">MITRE ATT&CK</button>
+            </div>
+
+            <div class="tab-content active" id="dora-content">
+                <div class="compliance-intro">
+                    <p>Der <strong>Digital Operational Resilience Act (DORA)</strong> - EU 2022/2554 - stellt Anforderungen an das IKT-Risikomanagement fuer Finanzunternehmen. IceLaborVPN erfuellt die relevanten Artikel.</p>
+                </div>
+                <div class="compliance-table-wrapper">
+                    <table class="compliance-table">
+                        <thead>
+                            <tr>
+                                <th>DORA Artikel</th>
+                                <th>Anforderung</th>
+                                <th>Umsetzung in IceLaborVPN</th>
+                                <th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td><strong>Art. 5</strong></td>
+                                <td>IKT-Risikomanagement</td>
+                                <td>Dokumentierte Risikobewertung, regelmaessige Reviews</td>
+                                <td><span class="status-badge status-ok">&#10003;</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Art. 6</strong></td>
+                                <td>IKT-Systeme & Tools</td>
+                                <td>Gehaertete Konfiguration, Patch-Management</td>
+                                <td><span class="status-badge status-ok">&#10003;</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Art. 9</strong></td>
+                                <td>Schutz und Praevention</td>
+                                <td>MFA, Encryption, Access Control</td>
+                                <td><span class="status-badge status-ok">&#10003;</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Art. 10</strong></td>
+                                <td>Erkennung</td>
+                                <td>Logging, Monitoring, Alerting</td>
+                                <td><span class="status-badge status-ok">&#10003;</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Art. 11</strong></td>
+                                <td>Reaktion und Wiederherstellung</td>
+                                <td>Incident Response, Backup/Recovery</td>
+                                <td><span class="status-badge status-ok">&#10003;</span></td>
+                            </tr>
+                            <tr>
+                                <td><strong>Art. 12</strong></td>
+                                <td>Backup-Richtlinien</td>
+                                <td>Taegliche Backups, getestete Wiederherstellung</td>
+                                <td><span class="status-badge status-ok">&#10003;</span></td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <div class="tab-content" id="mitre-content">
+                <div class="compliance-intro">
+                    <p><strong>MITRE ATT&CK</strong> ist ein Framework zur Beschreibung von Angriffstechniken. IceLaborVPN adressiert folgende Techniken durch entsprechende Mitigierungen.</p>
+                </div>
+                <div class="compliance-table-wrapper">
+                    <table class="compliance-table">
+                        <thead>
+                            <tr>
+                                <th>Taktik</th>
+                                <th>Technik</th>
+                                <th>ID</th>
+                                <th>Mitigierung</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <tr>
+                                <td>Initial Access</td>
+                                <td>Valid Accounts</td>
+                                <td>T1078</td>
+                                <td>MFA, Password Policy, Account Lockout</td>
+                            </tr>
+                            <tr>
+                                <td>Initial Access</td>
+                                <td>External Remote Services</td>
+                                <td>T1133</td>
+                                <td>VPN-only Access, Network Segmentation</td>
+                            </tr>
+                            <tr>
+                                <td>Credential Access</td>
+                                <td>Brute Force</td>
+                                <td>T1110</td>
+                                <td>Rate Limiting, Fail2ban, Account Lockout</td>
+                            </tr>
+                            <tr>
+                                <td>Persistence</td>
+                                <td>Account Manipulation</td>
+                                <td>T1098</td>
+                                <td>Audit Logging, RBAC</td>
+                            </tr>
+                            <tr>
+                                <td>Lateral Movement</td>
+                                <td>Remote Services</td>
+                                <td>T1021</td>
+                                <td>Network Segmentation, Session Recording</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Screenshots -->
+    <section class="section section-dark" id="screenshots">
+        <div class="container">
+            <div class="section-header">
+                <h2>Screenshots</h2>
+                <p>Benutzeroberflaeche und Workflows</p>
+            </div>
+            <div class="screenshots-grid">
+                <div class="screenshot-card">
+                    <img src="screenshots/guacamole-login.png" alt="Guacamole Login" loading="lazy">
+                    <div class="screenshot-caption">
+                        <h4>Login Portal</h4>
+                        <p>Sicherer Login mit Benutzername und Passwort, gefolgt von TOTP-Verifikation</p>
+                    </div>
+                </div>
+                <div class="screenshot-card">
+                    <img src="screenshots/portal-dashboard.png" alt="Dashboard" loading="lazy">
+                    <div class="screenshot-caption">
+                        <h4>Landing Page</h4>
+                        <p>Uebersichtliche Startseite mit Zugriff auf alle geschuetzten Services</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Installation -->
+    <section class="section" id="installation">
+        <div class="container">
+            <div class="section-header">
+                <h2>Installation</h2>
+                <p>Schnellstart-Anleitung</p>
+            </div>
+
+            <div class="install-steps">
+                <div class="install-step">
+                    <div class="step-number">1</div>
+                    <div class="step-content">
+                        <h3>Voraussetzungen</h3>
+                        <ul>
+                            <li>Ubuntu 22.04 LTS oder Debian 12</li>
+                            <li>Oeffentliche IPv4-Adresse</li>
+                            <li>DNS A-Record fuer Ihre Domain</li>
+                            <li>Min. 2 CPU Cores, 4 GB RAM, 50 GB SSD</li>
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="install-step">
+                    <div class="step-number">2</div>
+                    <div class="step-content">
+                        <h3>Repository klonen</h3>
+                        <div class="code-block">
+                            <pre><code>git clone https://github.com/icepaule/IceLaborVPN.git
+cd IceLaborVPN</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="install-step">
+                    <div class="step-number">3</div>
+                    <div class="step-content">
+                        <h3>Konfiguration anpassen</h3>
+                        <div class="code-block">
+                            <pre><code>cp .env.example .env
+nano .env  # Alle Werte ausfuellen!</code></pre>
+                        </div>
+                        <p class="step-note">Wichtige Variablen: HEADSCALE_DOMAIN, GUAC_ADMIN_PASSWORD, PUSHOVER_APP_TOKEN</p>
+                    </div>
+                </div>
+
+                <div class="install-step">
+                    <div class="step-number">4</div>
+                    <div class="step-content">
+                        <h3>Installation starten</h3>
+                        <div class="code-block">
+                            <pre><code>chmod +x scripts/install.sh
+sudo ./scripts/install.sh</code></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="install-step">
+                    <div class="step-number">5</div>
+                    <div class="step-content">
+                        <h3>Erster Login</h3>
+                        <ol>
+                            <li>Browser oeffnen: <code>https://ihre-domain.com/guacamole/</code></li>
+                            <li>Mit Admin-Credentials einloggen</li>
+                            <li>QR-Code mit Authenticator-App scannen</li>
+                            <li>6-stelligen TOTP-Code eingeben</li>
+                        </ol>
+                    </div>
+                </div>
+            </div>
+
+            <div class="install-checklist">
+                <h3>Post-Installation Checkliste</h3>
+                <ul class="checklist">
+                    <li><input type="checkbox"> SSL-Zertifikat validieren</li>
+                    <li><input type="checkbox"> TOTP fuer Admin-Account einrichten</li>
+                    <li><input type="checkbox"> Backup-Job konfigurieren</li>
+                    <li><input type="checkbox"> Monitoring-Alerts einrichten</li>
+                    <li><input type="checkbox"> Fail2ban-Regeln testen</li>
+                    <li><input type="checkbox"> Penetration Test durchfuehren</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <!-- Operations -->
+    <section class="section section-light" id="operations">
+        <div class="container">
+            <div class="section-header">
+                <h2>Betrieb und Wartung</h2>
+                <p>Taeglich, woechentlich, monatlich</p>
+            </div>
+
+            <div class="operations-grid">
+                <div class="operations-card">
+                    <h3>&#128197; Taegliche Aufgaben</h3>
+                    <ul>
+                        <li>Log-Review (SOC / ITSO)</li>
+                        <li>Backup-Verifizierung</li>
+                        <li>Systemstatus pruefen</li>
+                        <li>Fehlgeschlagene Logins pruefen</li>
+                    </ul>
+                </div>
+
+                <div class="operations-card">
+                    <h3>&#128198; Woechentliche Aufgaben</h3>
+                    <ul>
+                        <li>Fail2ban-Statistiken auswerten</li>
+                        <li>Benutzeraktivitaet Review</li>
+                        <li>Disk Space Check</li>
+                        <li>Container Updates pruefen</li>
+                    </ul>
+                </div>
+
+                <div class="operations-card">
+                    <h3>&#128467; Monatliche Aufgaben</h3>
+                    <ul>
+                        <li>Security Updates einspielen</li>
+                        <li>Benutzerberechtigungen Review</li>
+                        <li>Backup-Restore Test</li>
+                        <li>SSL-Zertifikat Check</li>
+                    </ul>
+                </div>
+            </div>
+
+            <div class="operations-commands">
+                <h3>Wichtige Befehle</h3>
+                <div class="code-block">
+                    <pre><code># Systemstatus
+docker compose -f /opt/guacamole/docker-compose.yml ps
+
+# Tailscale Nodes anzeigen
+sudo headscale nodes list
+
+# Fail2ban Status
+sudo fail2ban-client status guacamole
+
+# IP entsperren
+sudo fail2ban-client set guacamole unbanip 192.0.2.1
+
+# Alle Sessions beenden (Notfall)
+sudo docker exec guacamole-db psql -U guacamole -d guacamole \
+  -c "DELETE FROM guacamole_user_session;"</code></pre>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- FAQ -->
+    <section class="section" id="faq">
+        <div class="container">
+            <div class="section-header">
+                <h2>Haeufige Fragen</h2>
+                <p>FAQ fuer Administratoren</p>
+            </div>
+
+            <div class="faq-list">
+                <div class="faq-item">
+                    <button class="faq-question">
+                        Warum schlaegt der TOTP-Code fehl?
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Stellen Sie sicher, dass die Systemzeit synchronisiert ist: <code>timedatectl</code>. TOTP ist zeitbasiert und erfordert eine Abweichung von maximal 30 Sekunden. Bei anhaltendem Problem kann der TOTP-Code in den Benutzereinstellungen zurueckgesetzt werden.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question">
+                        Wie entsperre ich eine geblockte IP?
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        <p><code>sudo fail2ban-client set guacamole unbanip 192.0.2.1</code></p>
+                        <p>Ersetzen Sie die IP-Adresse entsprechend. Pruefen Sie vorher, ob die IP legitimerweise geblockt wurde.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question">
+                        Wie fuege ich neue Lab-Systeme hinzu?
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>1. AuthKey generieren: <code>/opt/IceLaborVPN/scripts/headscale-onboard.sh --generate-key</code></p>
+                        <p>2. Auf dem neuen System: <code>sudo tailscale up --login-server https://ihre-domain.com --authkey &lt;key&gt;</code></p>
+                        <p>3. Connection in Guacamole anlegen</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question">
+                        Wo finde ich die Session-Aufzeichnungen?
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Session Recordings werden unter <code>/opt/guacamole/record/</code> gespeichert. Sie koennen mit dem Guacamole Player wiedergegeben werden. Retention: 1 Jahr.</p>
+                    </div>
+                </div>
+
+                <div class="faq-item">
+                    <button class="faq-question">
+                        Ist IceLaborVPN fuer regulierte Umgebungen geeignet?
+                        <span class="faq-icon">+</span>
+                    </button>
+                    <div class="faq-answer">
+                        <p>Ja. IceLaborVPN wurde mit DORA-Compliance im Fokus entwickelt und erfuellt die Anforderungen von Art. 5, 6, 9, 10, 11 und 12. Das vollstaendige Operations Manual mit DORA-Mapping und MITRE ATT&CK-Referenzen ist im Repository enthalten.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <div class="footer-grid">
+                <div class="footer-section">
+                    <h4>IceLaborVPN</h4>
+                    <p>Secure Zero-Trust Remote Access Gateway fuer Malware Analysis Labs.</p>
+                    <p class="footer-license">MIT License - Open Source</p>
+                </div>
+                <div class="footer-section">
+                    <h4>Links</h4>
+                    <ul>
+                        <li><a href="https://github.com/icepaule/IceLaborVPN" target="_blank">GitHub Repository</a></li>
+                        <li><a href="https://github.com/icepaule/IceLaborVPN/issues" target="_blank">Issues / Support</a></li>
+                        <li><a href="https://github.com/icepaule/IcePorge" target="_blank">IcePorge Project</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Dokumentation</h4>
+                    <ul>
+                        <li><a href="#installation">Installation Guide</a></li>
+                        <li><a href="#operations">Operations Manual</a></li>
+                        <li><a href="#compliance">Compliance</a></li>
+                    </ul>
+                </div>
+                <div class="footer-section">
+                    <h4>Kontakt</h4>
+                    <p>IcePorge Project</p>
+                    <p><a href="https://github.com/icepaule">@icepaule</a></p>
+                    <p><a href="mailto:info@mpauli.de">info@mpauli.de</a></p>
+                </div>
+            </div>
+            <div class="footer-bottom">
+                <p>&copy; 2024-2026 IcePorge Project. Built with security in mind.</p>
+            </div>
+        </div>
+    </footer>
+
+    <script src="js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="de">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IceLaborVPN - Secure Lab Access</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: linear-gradient(135deg, #0f0f23 0%, #1a1a3e 50%, #0d1117 100%);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            color: #fff;
+        }
+        .container { max-width: 900px; width: 100%; }
+        .header { text-align: center; margin-bottom: 40px; }
+        .logo { font-size: 3em; margin-bottom: 10px; }
+        h1 { font-size: 2.5em; margin-bottom: 10px; background: linear-gradient(90deg, #64ffda, #48bb78); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+        .subtitle { color: #8892b0; font-size: 1.1em; }
+        .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .card {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(100,255,218,0.1);
+            border-radius: 16px;
+            padding: 25px;
+            text-decoration: none;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            overflow: hidden;
+        }
+        .card::before {
+            content: "";
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, #64ffda, #48bb78);
+            transform: scaleX(0);
+            transition: transform 0.3s ease;
+        }
+        .card:hover {
+            background: rgba(100,255,218,0.05);
+            transform: translateY(-5px);
+            border-color: rgba(100,255,218,0.3);
+            box-shadow: 0 20px 40px rgba(0,0,0,0.3);
+        }
+        .card:hover::before { transform: scaleX(1); }
+        .card-icon { font-size: 2.5em; margin-bottom: 15px; }
+        .card h3 { color: #fff; font-size: 1.3em; margin-bottom: 10px; }
+        .card p { color: #8892b0; font-size: 0.9em; line-height: 1.5; flex-grow: 1; }
+        .card .badge {
+            display: inline-block;
+            background: rgba(100,255,218,0.1);
+            color: #64ffda;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 0.75em;
+            margin-top: 15px;
+            font-family: monospace;
+        }
+        .auth-notice {
+            text-align: center;
+            padding: 15px 25px;
+            background: rgba(100,255,218,0.05);
+            border: 1px solid rgba(100,255,218,0.2);
+            border-radius: 10px;
+            margin-bottom: 20px;
+        }
+        .auth-notice .icon { margin-right: 8px; }
+        .auth-notice p { color: #64ffda; font-size: 0.9em; }
+        .footer { text-align: center; margin-top: 30px; color: #4a5568; font-size: 0.85em; }
+        .footer a { color: #64ffda; text-decoration: none; }
+        .footer a:hover { text-decoration: underline; }
+        @media (max-width: 600px) {
+            h1 { font-size: 1.8em; }
+            .cards { grid-template-columns: 1fr; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">🔐</div>
+            <h1>IceLaborVPN</h1>
+            <p class="subtitle">Secure Remote Access to Malware Analysis Lab</p>
+        </div>
+
+        <div class="auth-notice">
+            <p><span class="icon">🛡️</span> All services require authentication with TOTP/2FA via Guacamole</p>
+        </div>
+
+        <div class="cards">
+            <a href="/guacamole/" class="card">
+                <div class="card-icon">🖥️</div>
+                <h3>Remote Console</h3>
+                <p>SSH, VNC and RDP access to lab systems directly in your browser. No client installation required.</p>
+                <span class="badge">SSH / VNC / RDP</span>
+            </a>
+
+            <a href="/cape/" class="card">
+                <div class="card-icon">🔬</div>
+                <h3>CAPE Sandbox</h3>
+                <p>Malware analysis dashboard. Upload samples, view reports, extract IOCs and configurations.</p>
+                <span class="badge">Malware Analysis</span>
+            </a>
+
+            <a href="/cape-cockpit/" class="card">
+                <div class="card-icon">⚙️</div>
+                <h3>CAPE Management</h3>
+                <p>Server administration for the analysis system. Services, containers, logs and system status.</p>
+                <span class="badge">System Admin</span>
+            </a>
+
+            <a href="/gateway/" class="card">
+                <div class="card-icon">🌐</div>
+                <h3>Gateway Management</h3>
+                <p>VPN gateway administration. Headscale, Guacamole, Nginx monitoring and configuration.</p>
+                <span class="badge">VPN Admin</span>
+            </a>
+        </div>
+
+        <div class="footer">
+            <p>Powered by <a href="https://github.com/icepaule/IceLaborVPN" target="_blank">IceLaborVPN</a> |
+            <a href="https://github.com/icepaule/IcePorge" target="_blank">IcePorge Project</a></p>
+        </div>
+    </div>
+</body>
+</html>

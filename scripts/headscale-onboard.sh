@@ -17,7 +17,7 @@ set -euo pipefail
 
 # Konfiguration
 HEADSCALE_SERVER="https://headscale.thesoc.de"
-HEADSCALE_SSH_HOST="mpauli@46.4.142.238"
+HEADSCALE_SSH_HOST="${HEADSCALE_SSH_USER}@${HEADSCALE_SSH_HOST}"
 HEADSCALE_USER="lab"
 KEY_EXPIRATION="365d"
 
@@ -72,8 +72,8 @@ OFFICE-ZUGRIFF:
   2. Key generieren: ./headscale-onboard.sh --generate-key
   3. Im Tailscale Client: "Use custom server" -> https://headscale.thesoc.de
   4. AuthKey eingeben
-  5. Zugriff auf CAPEv2: https://100.64.0.1:8443
-  6. Zugriff auf Cockpit: https://100.64.0.1:9090
+  5. Zugriff auf CAPEv2: https://<TAILSCALE_IP>:8443
+  6. Zugriff auf Cockpit: https://<TAILSCALE_IP>:9090
 
 EOF
 }
