@@ -1,0 +1,66 @@
+# IceLaborVPN Fail2ban Configuration
+# /etc/fail2ban/jail.d/icelaborvpn.conf
+
+[DEFAULT]
+# Ban settings
+bantime = ${F2B_BANTIME:-3600}
+findtime = ${F2B_FINDTIME:-300}
+maxretry = ${F2B_MAXRETRY:-5}
+
+# Action with Pushover notification
+action = iptables-multiport[name=%(name)s, port="http,https", protocol=tcp]
+         pushover-notify[name=%(name)s, banreason="%(banreason)s"]
+
+[guacamole]
+enabled = true
+port = http,https
+filter = guacamole
+logpath = /var/log/nginx/access.log
+banreason = Multiple failed Guacamole login attempts
+
+[guacamole-aggressive]
+enabled = true
+port = http,https
+filter = guacamole
+logpath = /var/log/nginx/access.log
+maxretry = 3
+findtime = 60
+bantime = 7200
+banreason = Aggressive Guacamole brute-force attack
+
+[nginx-limit-req]
+enabled = true
+port = http,https
+filter = nginx-limit-req
+logpath = /var/log/nginx/error.log
+maxretry = 10
+findtime = 120
+bantime = 600
+banreason = Rate limit exceeded
+
+[nginx-botsearch]
+enabled = true
+port = http,https
+filter = nginx-botsearch
+logpath = /var/log/nginx/access.log
+maxretry = 2
+bantime = 86400
+banreason = Bot/Scanner detected
+
+[nginx-badbots]
+enabled = true
+port = http,https
+filter = apache-badbots
+logpath = /var/log/nginx/access.log
+maxretry = 1
+bantime = 86400
+banreason = Known malicious bot
+
+[sshd]
+enabled = true
+port = ssh
+filter = sshd
+logpath = /var/log/auth.log
+maxretry = 3
+bantime = 3600
+banreason = SSH brute-force attempt

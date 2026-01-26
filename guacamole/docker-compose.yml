@@ -1,0 +1,72 @@
+services:
+  guacd:
+    image: guacamole/guacd:latest
+    container_name: guacd
+    restart: unless-stopped
+    volumes:
+      - ./drive:/drive:rw
+      - ./record:/record:rw
+    networks:
+      - guacamole
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  guacamole:
+    image: guacamole/guacamole:latest
+    container_name: guacamole
+    restart: unless-stopped
+    depends_on:
+      - guacd
+      - postgres
+    environment:
+      GUACD_HOSTNAME: guacd
+      GUACD_PORT: 4822
+      POSTGRESQL_HOSTNAME: postgres
+      POSTGRESQL_DATABASE: ${POSTGRES_DB:-guacamole}
+      POSTGRESQL_USER: ${POSTGRES_USER:-guacamole}
+      POSTGRESQL_PASSWORD: ${GUAC_DB_PASSWORD}
+      TOTP_ENABLED: "true"
+      TOTP_ISSUER: ${GUAC_TOTP_ISSUER:-IceLaborVPN}
+      TOTP_DIGITS: 6
+      TOTP_PERIOD: 30
+      TOTP_MODE: sha1
+      RECORDING_SEARCH_PATH: /record
+      # Ban settings (Brute-force protection)
+      BAN_ENABLED: "true"
+      BAN_MAX_INVALID_ATTEMPTS: 5
+      BAN_ADDRESS_DURATION: 300
+    ports:
+      - '127.0.0.1:8085:8080'
+    networks:
+      - guacamole
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "50m"
+        max-file: "5"
+
+  postgres:
+    image: postgres:15-alpine
+    container_name: guacamole-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-guacamole}
+      POSTGRES_USER: ${POSTGRES_USER:-guacamole}
+      POSTGRES_PASSWORD: ${GUAC_DB_PASSWORD}
+    volumes:
+      - ./db-data:/var/lib/postgresql/data
+      - ./db-init:/docker-entrypoint-initdb.d:ro
+    networks:
+      - guacamole
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+networks:
+  guacamole:
+    driver: bridge

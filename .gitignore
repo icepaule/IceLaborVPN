@@ -1,0 +1,60 @@
+# Environment files with secrets
+.env
+*.env.local
+*.env.production
+
+# Backup files
+*.bak
+*.backup
+*.sql.gz
+*.sql.gz.gpg
+
+# Log files
+*.log
+logs/
+
+# Database files
+db-data/
+*.db
+
+# Session recordings (large files)
+record/
+
+# SSL certificates
+*.pem
+*.key
+*.crt
+*.csr
+
+# Temporary files
+*.tmp
+*.temp
+.tmp/
+tmp/
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.env/
+
+# Node (if any web assets)
+node_modules/
+
+# Auth keys (NEVER commit!)
+*-authkey.txt
+authkey*.txt
+
+# Docker volumes (local data)
+drive/
