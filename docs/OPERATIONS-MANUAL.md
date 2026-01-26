@@ -791,3 +791,235 @@ Siehe `/opt/IceLaborVPN/config/` für alle Konfigurationsvorlagen.
 **Ende des Dokuments**
 
 *Dieses Dokument unterliegt der regelmäßigen Überprüfung. Nächste geplante Review: 2026-07-26*
+## 15. Endpoint Deployment
+
+### 15.1 Übersicht
+
+Für den automatisierten Rollout von Tailscale-Clients auf Unternehmensgeräten stehen Deployment-Scripts für verschiedene Plattformen zur Verfügung.
+
+| Plattform | Script | MDM-Kompatibilität |
+|-----------|--------|-------------------|
+| Windows | `deploy-tailscale-windows.ps1` | Endpoint Central, Intune, SCCM |
+| Linux | `deploy-tailscale-linux.sh` | Endpoint Central, Ansible, Puppet |
+| macOS | `deploy-tailscale-macos.sh` | Endpoint Central, Jamf, Munki |
+
+### 15.2 Sicherheitskonzept
+
+Die Deployment-Scripts verwenden **dynamische Authkeys** statt statischer Keys:
+
+```
+┌──────────────┐     API-Request      ┌──────────────┐
+│   Endpoint   │ ──────────────────▶  │  Headscale   │
+│   Central    │                      │    Server    │
+└──────────────┘                      └──────────────┘
+       │                                     │
+       │  Deploy Script                      │ Generate
+       │  mit API-Key                        │ Single-Use Key
+       ▼                                     ▼
+┌──────────────┐     Einmal-Key       ┌──────────────┐
+│   Client     │ ◀────────────────    │  Preauthkey  │
+│   Device     │     (1h gültig)      │   (unique)   │
+└──────────────┘                      └──────────────┘
+```
+
+**Vorteile:**
+- Keine langlebigen Keys in Scripts
+- Jedes Gerät erhält einzigartigen Key
+- Kompromittierte Keys nach 1h ungültig
+- Audit-Trail der Key-Erstellung
+
+### 15.3 Deployment mit ManageEngine Endpoint Central
+
+#### 15.3.1 Vorbereitung
+
+1. **API-Key auf Headscale-Server erstellen:**
+   ```bash
+   sudo headscale apikeys create --expiration 365d
+   ```
+   Output sicher speichern.
+
+2. **Scripts anpassen:**
+   - `HEADSCALE_URL` auf Ihre Domain setzen
+   - `HEADSCALE_API_KEY` eintragen
+   - `HEADSCALE_USER` auf Ihren Namespace setzen
+
+#### 15.3.2 Windows-Deployment
+
+1. **Endpoint Central** → **Software Deployment** → **Script Repository**
+2. **Add Script** mit folgenden Einstellungen:
+   - **Name:** Tailscale Headscale Deployment
+   - **Script Type:** PowerShell
+   - **Execution Mode:** System Context
+3. Inhalt von `deploy-tailscale-windows.ps1` einfügen
+4. **Configuration** → **Deploy** auf Zielgruppen
+
+#### 15.3.3 Linux-Deployment
+
+1. **Script Repository** → **Add Script**
+   - **Script Type:** Shell Script
+   - **Run as:** root
+2. Inhalt von `deploy-tailscale-linux.sh` einfügen
+3. Deploy auf Linux-Zielgruppen
+
+#### 15.3.4 macOS-Deployment
+
+1. **Script Repository** → **Add Script**
+   - **Script Type:** Shell Script
+   - **Run as:** root
+2. Inhalt von `deploy-tailscale-macos.sh` einfügen
+3. Deploy auf Mac-Zielgruppen
+
+### 15.4 Deployment-Logs
+
+| Plattform | Log-Pfad |
+|-----------|----------|
+| Windows | `%TEMP%\tailscale-deploy.log` |
+| Linux | `/var/log/tailscale-deploy.log` |
+| macOS | `/var/log/tailscale-deploy.log` |
+
+### 15.5 Troubleshooting
+
+| Problem | Ursache | Lösung |
+|---------|---------|--------|
+| "Unauthorized" API-Fehler | API-Key abgelaufen/falsch | Neuen Key generieren |
+| Installation schlägt fehl | Keine Internet-Verbindung | Proxy-Einstellungen prüfen |
+| Verbindung timeout | Firewall blockiert UDP 41641 | Firewall-Regel hinzufügen |
+
+---
+
+## 16. Guacamole Auto-Sync
+
+### 16.1 Funktionsbeschreibung
+
+Das Guacamole Auto-Sync Feature synchronisiert automatisch Headscale-Nodes mit Apache Guacamole-Verbindungen. Es:
+
+- Scannt alle Online-Nodes auf offene Ports (SSH/22, RDP/3389, VNC/5900)
+- Erstellt automatisch Guacamole-Verbindungen für erkannte Services
+- Entfernt Verbindungen wenn Nodes offline gehen
+- Läuft als Cronjob alle 5 Minuten
+
+### 16.2 Architektur
+
+```
+┌─────────────┐     JSON      ┌──────────────────┐
+│  Headscale  │ ────────────▶ │                  │
+│   CLI       │               │   Sync-Script    │
+└─────────────┘               │   (Python 3)     │
+                              │                  │
+┌─────────────┐   Port-Scan   │                  │
+│   Nodes     │ ◀──────────── │                  │
+│ 22/3389/5900│               └────────┬─────────┘
+└─────────────┘                        │
+                                       │ SQL
+                              ┌────────▼─────────┐
+                              │    Guacamole     │
+                              │    PostgreSQL    │
+                              └──────────────────┘
+```
+
+### 16.3 Konfiguration
+
+Das Script `/opt/guacamole/headscale-guacamole-sync.py` enthält folgende Konfigurationsoptionen:
+
+```python
+CONFIG = {
+    "default_username": "admin",       # Standard-Benutzername für Verbindungen
+    "ssh_color_scheme": "green-black", # SSH-Terminal Farbschema
+    "scan_timeout": 1,                 # Port-Scan Timeout in Sekunden
+    "skip_nodes": ["headscale-gw"],    # Nodes die übersprungen werden
+}
+```
+
+### 16.4 Installation
+
+```bash
+# Script installieren
+sudo cp deployment/headscale-guacamole-sync.py /opt/guacamole/
+sudo chmod +x /opt/guacamole/headscale-guacamole-sync.py
+
+# Cronjob einrichten
+echo '*/5 * * * * root /usr/bin/python3 /opt/guacamole/headscale-guacamole-sync.py >> /var/log/headscale-sync.log 2>&1' | \
+  sudo tee /etc/cron.d/headscale-sync
+```
+
+### 16.5 Manuelle Ausführung
+
+```bash
+sudo python3 /opt/guacamole/headscale-guacamole-sync.py
+```
+
+### 16.6 Namenskonvention
+
+Automatisch erstellte Verbindungen folgen dem Schema:
+
+| Protokoll | Verbindungsname |
+|-----------|----------------|
+| SSH | `{hostname} (SSH)` |
+| RDP | `{hostname} (RDP)` |
+| VNC | `{hostname} (VNC)` |
+
+### 16.7 Log-Analyse
+
+```bash
+# Live-Log verfolgen
+tail -f /var/log/headscale-sync.log
+
+# Letzte Sync-Ausgabe
+tail -50 /var/log/headscale-sync.log
+```
+
+**Beispiel-Output:**
+```
+[2026-01-26T18:04:16] === Starte Headscale-Guacamole Sync ===
+[2026-01-26T18:04:16] Gefunden: 4 Headscale-Nodes, 3 Guacamole-Verbindungen
+[2026-01-26T18:04:16] Prüfe Node: sandbox-01 (100.64.0.x)
+[2026-01-26T18:04:16]   Port 22 (ssh) offen
+[2026-01-26T18:04:17]   Port 3389 (rdp) geschlossen
+[2026-01-26T18:04:17] Prüfe Node: workstation-01 (100.64.0.y)
+[2026-01-26T18:04:18]   Port 3389 (rdp) offen
+[2026-01-26T18:04:18] Erstelle Verbindung: workstation-01 (RDP)
+[2026-01-26T18:04:19] === Sync abgeschlossen ===
+```
+
+---
+
+## 17. API-Referenz
+
+### 17.1 Headscale API
+
+Die Headscale REST-API ermöglicht programmatische Verwaltung:
+
+**Basis-URL:** `https://<headscale-domain>/api/v1/`
+
+**Authentifizierung:** Bearer Token
+```bash
+curl -H "Authorization: Bearer <API_KEY>" \
+  https://headscale.example.com/api/v1/node
+```
+
+### 17.2 Wichtige Endpoints
+
+| Endpoint | Methode | Beschreibung |
+|----------|---------|--------------|
+| `/node` | GET | Liste aller Nodes |
+| `/preauthkey` | POST | Neuen Authkey erstellen |
+| `/preauthkey` | GET | Authkeys auflisten |
+| `/user` | GET | Benutzer/Namespaces auflisten |
+
+### 17.3 Authkey erstellen (API)
+
+```bash
+curl -X POST "https://headscale.example.com/api/v1/preauthkey" \
+  -H "Authorization: Bearer <API_KEY>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "user": "lab",
+    "reusable": false,
+    "ephemeral": false,
+    "expiration": "2026-01-27T00:00:00Z"
+  }'
+```
+
+---
+
+*Ergänzung zum Operations Manual v1.0 - Stand: 2026-01-26*

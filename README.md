@@ -48,36 +48,9 @@ IceLaborVPN provides secure, browser-based remote access to isolated malware ana
 
 ## Architecture
 
-```
-┌─────────────────────────────────────────────────────────────────┐
-│                     INTERNET                                     │
-└───────────────────────────┬─────────────────────────────────────┘
-                            │ HTTPS (TLS 1.3)
-                            ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  IceLaborVPN Gateway                                             │
-│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐              │
-│  │   Nginx     │  │  Guacamole  │  │  Fail2ban   │              │
-│  │ Rate Limit  │─▶│    TOTP     │  │    IPS      │              │
-│  └─────────────┘  │  Recording  │  └─────────────┘              │
-│                   └──────┬──────┘                                │
-│  ┌─────────────┐         │                                       │
-│  │  Headscale  │◀────────┘                                       │
-│  │  VPN Ctrl   │                                                 │
-│  └──────┬──────┘                                                 │
-└─────────┼───────────────────────────────────────────────────────┘
-          │ WireGuard VPN
-          ▼
-┌─────────────────────────────────────────────────────────────────┐
-│  Lab Network (Tailscale Mesh)                                    │
-│  ┌───────────┐  ┌───────────┐  ┌───────────┐  ┌───────────┐    │
-│  │   CAPE    │  │   MWDB    │  │  Cockpit  │  │ Analysis  │    │
-│  │  Sandbox  │  │  Database │  │  WebUI    │  │    VMs    │    │
-│  │<TAILSCALE_IP> │  │<TAILSCALE_IP> │  │<TAILSCALE_IP> │  │<TAILSCALE_IP> │    │
-│  │   :8443   │  │   :8443   │  │   :9090   │  │           │    │
-│  └───────────┘  └───────────┘  └───────────┘  └───────────┘    │
-└─────────────────────────────────────────────────────────────────┘
-```
+![IceLaborVPN Architecture](website/images/architecture.svg)
+
+*Zero-Trust Architecture with WireGuard VPN mesh and HTML5 Remote Access*
 
 ---
 
@@ -151,6 +124,46 @@ sudo tailscale up --login-server https://your-domain.com \
     --authkey <generated-key>
 ```
 
+
+
+### Automated Endpoint Deployment
+
+For enterprise deployments via ManageEngine Endpoint Central or similar MDM solutions:
+
+```bash
+# Deploy scripts are in the deployment/ directory
+ls deployment/
+
+# Windows (PowerShell, run as SYSTEM)
+deploy-tailscale-windows.ps1
+
+# Linux (Bash, run as root)  
+deploy-tailscale-linux.sh
+
+# macOS (Bash, run as root)
+deploy-tailscale-macos.sh
+```
+
+See [deployment/README.md](deployment/README.md) for configuration instructions.
+
+### Guacamole Auto-Sync
+
+Automatically create Guacamole connections for all Headscale nodes:
+
+```bash
+# Install the sync script
+sudo cp deployment/headscale-guacamole-sync.py /opt/guacamole/
+sudo chmod +x /opt/guacamole/headscale-guacamole-sync.py
+
+# Run manually
+sudo python3 /opt/guacamole/headscale-guacamole-sync.py
+
+# Or set up cron (every 5 minutes)
+echo '*/5 * * * * root /usr/bin/python3 /opt/guacamole/headscale-guacamole-sync.py >> /var/log/headscale-sync.log 2>&1' | sudo tee /etc/cron.d/headscale-sync
+```
+
+The script scans all online nodes for SSH (22), RDP (3389), VNC (5900) and manages Guacamole connections automatically.
+
 ---
 
 ## Security Features
@@ -202,27 +215,32 @@ IceLaborVPN/
 ├── .env.example           # Environment template
 ├── README.md              # This file
 ├── LICENSE                # MIT License
+├── deployment/            # Endpoint deployment scripts
+│   ├── README.md          # Deployment documentation
+│   ├── deploy-tailscale-windows.ps1  # Windows deployment
+│   ├── deploy-tailscale-linux.sh     # Linux deployment
+│   ├── deploy-tailscale-macos.sh     # macOS deployment
+│   └── headscale-guacamole-sync.py   # Auto-sync connections
 ├── scripts/
 │   ├── install.sh         # Main installer
 │   ├── backup.sh          # Backup script
 │   ├── pushover-notify.sh # Notification script
 │   ├── guacamole-monitor.sh # Session monitor
 │   └── headscale-onboard.sh # Node onboarding
-├── config/
-│   ├── headscale.yaml.template
-│   ├── fail2ban-*.conf
-│   └── nginx templates
-├── guacamole/
-│   ├── docker-compose.yml
-│   └── SQL templates
-├── nginx/
-│   └── headscale.conf.template
-├── systemd/
-│   └── service files
-└── docs/
-    ├── OPERATIONS-MANUAL.md
-    ├── screenshots/
-    └── ...
+├── config/                # Configuration templates
+├── guacamole/             # Docker compose & SQL
+├── nginx/                 # Nginx configuration
+├── systemd/               # Service files
+├── docs/
+│   ├── OPERATIONS-MANUAL.md  # ITSO handbook (DORA/MITRE)
+│   └── screenshots/
+└── website/               # Documentation website
+    ├── index.html
+    ├── css/
+    ├── js/
+    ├── images/
+    │   └── architecture.svg
+    └── screenshots/
 ```
 
 ---
