@@ -1,0 +1,19 @@
+# Nginx HTTP Basic Auth brute-force protection
+# Catches failed .htpasswd authentication attempts
+
+[nginx-http-auth]
+enabled = true
+port = http,https
+filter = nginx-http-auth
+logpath = /var/log/nginx/error.log
+maxretry = 3
+findtime = 600
+
+bantime = 10m
+bantime.increment = true
+bantime.multipliers = 1 3 12
+bantime.maxtime = 1h
+bantime.overalljails = true
+
+action = nftables[type=allports]
+         pushover-notify

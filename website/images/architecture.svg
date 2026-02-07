@@ -55,10 +55,11 @@
 
   <!-- Fail2ban Box -->
   <rect x="520" y="190" width="150" height="100" rx="8" fill="#2c3e50" stroke="#e74c3c" stroke-width="2"/>
-  <text x="595" y="220" text-anchor="middle" fill="#fff" font-size="14" font-weight="600">Fail2ban</text>
-  <text x="595" y="245" text-anchor="middle" fill="#8892b0" font-size="11">IPS</text>
-  <text x="595" y="262" text-anchor="middle" fill="#8892b0" font-size="10">Auto IP-Block</text>
-  <text x="595" y="278" text-anchor="middle" fill="#8892b0" font-size="10">Pushover Alerts</text>
+  <text x="595" y="216" text-anchor="middle" fill="#fff" font-size="14" font-weight="600">Fail2ban</text>
+  <text x="595" y="236" text-anchor="middle" fill="#8892b0" font-size="10">Progressive Banning</text>
+  <text x="595" y="252" text-anchor="middle" fill="#8892b0" font-size="10">5m → 15m → 60m</text>
+  <text x="595" y="268" text-anchor="middle" fill="#8892b0" font-size="10">Scanner Detection</text>
+  <text x="595" y="284" text-anchor="middle" fill="#8892b0" font-size="10">Web Dashboard</text>
 
   <!-- Headscale Box -->
   <rect x="700" y="190" width="130" height="100" rx="8" fill="#2c3e50" stroke="#f39c12" stroke-width="2"/>

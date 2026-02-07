@@ -1,0 +1,20 @@
+# Instant ban for credential/config file probing (.env, .git, etc.)
+# Very aggressive: 2 attempts = ban, clearly malicious behavior
+
+[nginx-cred-harvest]
+enabled = true
+port = http,https
+filter = nginx-cred-harvest
+logpath = /var/log/nginx/access.log
+maxretry = 2
+findtime = 3600
+
+# Progressive ban: 15m → 1h → 24h
+bantime = 15m
+bantime.increment = true
+bantime.multipliers = 1 4 96
+bantime.maxtime = 24h
+bantime.overalljails = true
+
+action = nftables[type=allports]
+         pushover-notify

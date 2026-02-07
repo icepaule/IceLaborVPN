@@ -1,0 +1,13 @@
+# Recidive jail: catch repeat offenders across ALL jails
+# If an IP gets banned 3 times within 12 hours, ban for 1 week
+
+[recidive]
+enabled = true
+filter = recidive
+logpath = /var/log/fail2ban.log
+maxretry = 3
+findtime = 43200
+bantime = 604800
+banaction = nftables[type=allports]
+action = nftables[type=allports]
+         pushover-notify
