@@ -21,6 +21,8 @@ IceLaborVPN provides secure, browser-based remote access to isolated malware ana
 - **Multi-Factor Authentication** - TOTP/2FA mandatory for all users
 - **Session Recording** - Full audit trail for compliance
 - **Progressive Brute-Force Protection** - Multi-layer defense with escalating ban times (5 min → 15 min → 60 min)
+- **Threat Intelligence Blocklists** - Proactive blocking via 6 OSINT feeds (Spamhaus, Tor, Emerging Threats, Blocklist.de, AbuseIPDB)
+- **AbuseIPDB Integration** - All 7 fail2ban jails report malicious IPs to community threat intelligence
 - **Fail2ban Web Dashboard** - View and manage bans directly from the portal (after login)
 - **Real-time Alerts** - Pushover notifications with anti-flood deduplication
 - **Scanner Detection** - Automatic detection and banning of nmap/vulnerability scanners
@@ -102,6 +104,7 @@ sudo ./scripts/install.sh
 | `GUAC_DB_PASSWORD` | Database password | Yes |
 | `PUSHOVER_APP_TOKEN` | Pushover application token | Yes |
 | `PUSHOVER_USER_KEY` | Pushover user key | Yes |
+| `ABUSEIPDB_API_KEY` | AbuseIPDB API key for reporting + blocklist | Yes |
 | `SSL_EMAIL` | Email for Let's Encrypt | Yes |
 
 See [.env.example](.env.example) for all options.
@@ -174,11 +177,14 @@ The script scans all online nodes for SSH (22), RDP (3389), VNC (5900) and manag
 
 | Layer | Protection |
 |-------|------------|
+| Threat Intelligence Blocklists | Proactive blocking of ~30,000+ known malicious IPs via OSINT feeds |
+| AbuseIPDB Reporting | All bans reported to community threat intelligence network |
 | TLS 1.3 | Transport encryption |
 | nginx Rate Limiting | 5 logins/min, 30 req/sec |
 | Guacamole Brute-Force | 5 attempts → 5 min ban |
-| Fail2ban (Progressive) | 5 attempts → 5 min → 15 min → 60 min ban |
+| Fail2ban (7 Jails) | Progressive banning: 5 min → 15 min → 60 min → 1 week (recidive) |
 | Scanner Detection | nmap/vuln scanner auto-ban on all ports |
+| Credential Harvesting Detection | .env/.git probing → instant ban (15 min → 1h → 24h) |
 | TOTP/2FA | Mandatory second factor |
 | Session Timeout | 60 minutes inactivity |
 
@@ -199,6 +205,46 @@ Real-time Pushover notifications with anti-flood deduplication (same IP only not
 - IP bans (Fail2ban) with GeoIP info
 - Scanner/attack detection
 - Service failures
+
+### Threat Intelligence Blocklists
+
+Proactive blocking of known malicious IPs using dedicated nftables table (`inet blocklist-table`, priority -10):
+
+| Feed | Source | Update Interval | Description |
+|------|--------|-----------------|-------------|
+| Spamhaus DROP | spamhaus.org | 12h | Hijacked/spam networks (IPv4 + IPv6) |
+| Tor Exit Nodes | dan.me.uk | 6h | Tor exit relay IPs |
+| Emerging Threats | emergingthreats.net | 24h | Known attack sources |
+| Blocklist.de | blocklist.de | 6h | Active attack sources (SSH, mail, web) |
+| AbuseIPDB | abuseipdb.com | 24h | Community-reported malicious IPs (confidence >90%) |
+
+Features:
+- Boot-persistent via systemd (survives reboots without nftables service)
+- Whitelist protection for own infrastructure
+- Cached feeds for offline resilience
+- Pushover alerts on feed update failures
+
+```bash
+# Manual status check
+/opt/IceLaborVPN/scripts/update-blocklists.sh --status
+
+# Timer overview
+systemctl list-timers 'icelabor-blocklist*'
+```
+
+### AbuseIPDB Integration
+
+All 7 fail2ban jails automatically report banned IPs to [AbuseIPDB](https://www.abuseipdb.com/) with appropriate attack categories:
+
+| Jail | AbuseIPDB Categories |
+|------|---------------------|
+| sshd | Brute-Force, SSH |
+| guacamole | Brute-Force, Web App Attack |
+| nginx-limit-req | Web App Attack, Bad Web Bot |
+| nginx-scan | Port Scan, Web App Attack |
+| nginx-cred-harvest | Web App Attack, Hacking |
+| nginx-http-auth | Brute-Force, Web App Attack |
+| recidive | Brute-Force (repeat offender) |
 
 ### Compliance
 
@@ -238,15 +284,20 @@ IceLaborVPN/
 │   ├── backup.sh          # Backup script
 │   ├── pushover-notify.sh # Notification script
 │   ├── guacamole-monitor.sh # Session monitor
-│   └── headscale-onboard.sh # Node onboarding
+│   ├── headscale-onboard.sh # Node onboarding
+│   └── update-blocklists.sh # Threat intelligence blocklist manager
 ├── config/                # Configuration templates
-│   ├── fail2ban-jail.conf.template    # Fail2ban jails (incl. progressive banning)
+│   ├── fail2ban-jail.conf.template    # All 7 jails (nftables + AbuseIPDB + Pushover)
 │   ├── fail2ban-filter-nginx-scan.conf # Scanner detection filter
+│   ├── fail2ban-filter-nginx-cred-harvest.conf # Credential harvesting filter
 │   ├── fail2ban-action-pushover.conf  # Pushover notification action
-│   └── fail2ban-sudoers-webui        # Sudoers for web UI management
+│   ├── fail2ban-sudoers-webui        # Sudoers for web UI management
+│   ├── blocklist-whitelist.conf.example # Blocklist whitelist template
+│   ├── logrotate-icelaborvpn.conf    # Service log rotation config
+│   └── logrotate-blocklists.conf     # Blocklist log rotation config
 ├── guacamole/             # Docker compose & SQL
 ├── nginx/                 # Nginx configuration
-├── systemd/               # Service files
+├── systemd/               # Service files (monitor + blocklist timers)
 ├── docs/
 │   ├── OPERATIONS-MANUAL.md  # ITSO handbook (DORA/MITRE)
 │   └── screenshots/

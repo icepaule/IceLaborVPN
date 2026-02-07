@@ -1,0 +1,9 @@
+[Unit]
+Description=IceLaborVPN Blocklist Update - Spamhaus DROP
+After=icelabor-blocklist-init.service
+Requires=icelabor-blocklist-init.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/IceLaborVPN/scripts/update-blocklists.sh --feed spamhaus
+TimeoutStartSec=120

@@ -1,0 +1,12 @@
+[Unit]
+Description=IceLaborVPN Blocklist Init - Create nftables table and load cached feeds
+After=network-online.target nftables.service
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/opt/IceLaborVPN/scripts/update-blocklists.sh --init
+RemainAfterExit=yes
+
+[Install]
+WantedBy=multi-user.target

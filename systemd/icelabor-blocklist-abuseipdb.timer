@@ -1,0 +1,11 @@
+[Unit]
+Description=Update AbuseIPDB top IPs blocklist every 24 hours
+
+[Timer]
+OnBootSec=10min
+OnUnitActiveSec=24h
+RandomizedDelaySec=600
+Persistent=true
+
+[Install]
+WantedBy=timers.target

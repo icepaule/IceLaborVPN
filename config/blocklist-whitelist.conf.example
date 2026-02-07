@@ -1,0 +1,14 @@
+# IceLaborVPN Blocklist Whitelist
+# Install to: /etc/icelabor-blocklists/whitelist.conf
+#
+# IPs/CIDRs listed here will NEVER be added to any blocklist set.
+# One entry per line. Comments start with #.
+
+127.0.0.0/8           # Loopback
+::1/128               # IPv6 loopback
+# YOUR_SERVER_IP/29   # Server public IP
+100.64.0.0/10         # Tailscale network
+172.17.0.0/16         # Docker bridge
+172.18.0.0/16         # Docker network
+# 10.0.0.0/8          # Internal networks (adjust to your setup)
+# 192.168.0.0/16      # Home networks (adjust to your setup)

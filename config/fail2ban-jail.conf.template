@@ -1,32 +1,41 @@
 # IceLaborVPN Fail2ban Configuration
-# /etc/fail2ban/jail.d/icelaborvpn.conf
+# /etc/fail2ban/jail.d/defaults-debian.conf + icelaborvpn.conf
+#
+# All jails use nftables (not iptables) and report to:
+# - Pushover (real-time mobile alerts)
+# - AbuseIPDB (community threat intelligence)
+#
+# AbuseIPDB API key must be configured in:
+#   /etc/fail2ban/action.d/abuseipdb.local
 
+# ==========================================================================
+# defaults-debian.conf
+# ==========================================================================
 [DEFAULT]
-# Ban settings
-bantime = ${F2B_BANTIME:-3600}
-findtime = ${F2B_FINDTIME:-300}
-maxretry = ${F2B_MAXRETRY:-5}
+banaction = nftables
+banaction_allports = nftables[type=allports]
+backend = systemd
 
-# Action with Pushover notification
-action = iptables-multiport[name=%(name)s, port="http,https", protocol=tcp]
-         pushover-notify[name=%(name)s, banreason="%(banreason)s"]
+[sshd]
+enabled = true
+action = nftables[type=allports]
+         pushover-notify
+         abuseipdb[abuseipdb_category="18,22"]
 
+# ==========================================================================
+# icelaborvpn.conf
+# ==========================================================================
 [guacamole]
 enabled = true
 port = http,https
 filter = guacamole
 logpath = /var/log/nginx/access.log
-banreason = Multiple failed Guacamole login attempts
-
-[guacamole-aggressive]
-enabled = true
-port = http,https
-filter = guacamole
-logpath = /var/log/nginx/access.log
-maxretry = 3
-findtime = 60
-bantime = 7200
-banreason = Aggressive Guacamole brute-force attack
+maxretry = 5
+findtime = 300
+bantime = 3600
+action = nftables[type=allports]
+         pushover-notify
+         abuseipdb[abuseipdb_category="18,21"]
 
 [nginx-limit-req]
 enabled = true
@@ -36,25 +45,9 @@ logpath = /var/log/nginx/error.log
 maxretry = 10
 findtime = 120
 bantime = 600
-banreason = Rate limit exceeded
-
-[nginx-botsearch]
-enabled = true
-port = http,https
-filter = nginx-botsearch
-logpath = /var/log/nginx/access.log
-maxretry = 2
-bantime = 86400
-banreason = Bot/Scanner detected
-
-[nginx-badbots]
-enabled = true
-port = http,https
-filter = apache-badbots
-logpath = /var/log/nginx/access.log
-maxretry = 1
-bantime = 86400
-banreason = Known malicious bot
+action = nftables[type=allports]
+         pushover-notify
+         abuseipdb[abuseipdb_category="21,19"]
 
 # ==========================================================================
 # Port/Vulnerability Scanner Detection with Progressive Banning
@@ -68,7 +61,6 @@ logpath = /var/log/nginx/access.log
 maxretry = 5
 findtime = 600
 
-# Progressive ban times via bantime.increment (requires fail2ban >= 0.11)
 bantime = 5m
 bantime.increment = true
 bantime.multipliers = 1 3 12
@@ -77,12 +69,64 @@ bantime.overalljails = true
 
 action = nftables[type=allports]
          pushover-notify
+         abuseipdb[abuseipdb_category="14,21"]
 
-[sshd]
+# ==========================================================================
+# Credential/Config File Probing (.env, .git, wp-admin, etc.)
+# Very aggressive: 2 attempts = ban
+# Progressive ban: 15m -> 1h -> 24h
+# ==========================================================================
+[nginx-cred-harvest]
 enabled = true
-port = ssh
-filter = sshd
-logpath = /var/log/auth.log
+port = http,https
+filter = nginx-cred-harvest
+logpath = /var/log/nginx/access.log
+maxretry = 2
+findtime = 3600
+
+bantime = 15m
+bantime.increment = true
+bantime.multipliers = 1 4 96
+bantime.maxtime = 24h
+bantime.overalljails = true
+
+action = nftables[type=allports]
+         pushover-notify
+         abuseipdb[abuseipdb_category="21,15"]
+
+# ==========================================================================
+# Nginx HTTP Basic Auth brute-force protection
+# ==========================================================================
+[nginx-http-auth]
+enabled = true
+port = http,https
+filter = nginx-http-auth
+logpath = /var/log/nginx/error.log
 maxretry = 3
-bantime = 3600
-banreason = SSH brute-force attempt
+findtime = 600
+
+bantime = 10m
+bantime.increment = true
+bantime.multipliers = 1 3 12
+bantime.maxtime = 1h
+bantime.overalljails = true
+
+action = nftables[type=allports]
+         pushover-notify
+         abuseipdb[abuseipdb_category="18,21"]
+
+# ==========================================================================
+# Recidive: catch repeat offenders across ALL jails
+# If an IP gets banned 3 times within 12 hours, ban for 1 week
+# ==========================================================================
+[recidive]
+enabled = true
+filter = recidive
+logpath = /var/log/fail2ban.log
+maxretry = 3
+findtime = 43200
+bantime = 604800
+banaction = nftables[type=allports]
+action = nftables[type=allports]
+         pushover-notify
+         abuseipdb[abuseipdb_category="18"]

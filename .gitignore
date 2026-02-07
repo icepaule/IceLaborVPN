@@ -56,5 +56,9 @@ node_modules/
 *-authkey.txt
 authkey*.txt
 
+# API keys and secrets
+abuseipdb-key.conf
+abuseipdb.local
+
 # Docker volumes (local data)
 drive/

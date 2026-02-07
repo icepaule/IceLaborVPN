@@ -1,0 +1,11 @@
+[Unit]
+Description=Update Spamhaus DROP blocklist every 12 hours
+
+[Timer]
+OnBootSec=5min
+OnUnitActiveSec=12h
+RandomizedDelaySec=300
+Persistent=true
+
+[Install]
+WantedBy=timers.target

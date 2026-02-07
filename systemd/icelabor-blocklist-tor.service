@@ -1,0 +1,9 @@
+[Unit]
+Description=IceLaborVPN Blocklist Update - Tor Exit Nodes
+After=icelabor-blocklist-init.service
+Requires=icelabor-blocklist-init.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/IceLaborVPN/scripts/update-blocklists.sh --feed tor
+TimeoutStartSec=120

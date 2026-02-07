@@ -8,7 +8,7 @@
 
 | Attribut | Wert |
 |----------|------|
-| Dokumentenversion | 1.0 |
+| Dokumentenversion | 1.1 |
 | Klassifizierung | INTERN / VERTRAULICH |
 | Zielgruppe | IT Security Officer (ITSO), DevSecOps, SOC |
 | Compliance | DORA, ISO 27001, MITRE ATT&CK |
@@ -107,7 +107,7 @@ IceLaborVPN ermöglicht:
 | Headscale | 0.23.x | WireGuard VPN Control Plane | 8080 |
 | Guacamole | 1.5.x | HTML5 Remote Access | 8085 |
 | PostgreSQL | 15.x | Guacamole Database | 5432 |
-| Fail2ban | 1.0.x | Intrusion Prevention | - |
+| Fail2ban | 1.0.x | Intrusion Prevention (7 jails + AbuseIPDB) | - |
 | Tailscale | Latest | VPN Client | 41641/UDP |
 
 ### 2.3 Datenfluss
@@ -123,10 +123,16 @@ IceLaborVPN ermöglicht:
 ### 3.1 Defense in Depth
 
 ```
-Layer 1: Network Security
-├── Firewall (UFW)
+Layer 0: Threat Intelligence (Proactive)
+├── OSINT Blocklists (Spamhaus, Tor, ET, Blocklist.de, AbuseIPDB)
+├── nftables priority -10 (before all other rules)
+└── ~30,000+ known malicious IPs blocked at network level
+
+Layer 1: Network Security (Reactive)
+├── Firewall (nftables)
 ├── Rate Limiting (nginx)
-└── Fail2ban (IP Blocking)
+├── Fail2ban (7 Jails, progressive banning)
+└── AbuseIPDB Reporting (community threat intelligence)
 
 Layer 2: Transport Security
 ├── TLS 1.3 only
@@ -470,12 +476,15 @@ curl -s http://localhost:8085/guacamole/api/session/data/postgresql/activeConnec
 
 | Log | Pfad | Retention | Inhalt |
 |-----|------|-----------|--------|
-| Nginx Access | /var/log/nginx/access.log | 90 Tage | HTTP-Requests |
-| Nginx Error | /var/log/nginx/error.log | 90 Tage | Fehler, Rate Limits |
+| Nginx Access | /var/log/nginx/access.log | 7 Tage | HTTP-Requests |
+| Nginx Error | /var/log/nginx/error.log | 7 Tage | Fehler, Rate Limits |
 | Guacamole | docker logs guacamole | 30 Tage | Auth, Sessions |
-| Fail2ban | /var/log/fail2ban.log | 90 Tage | Bans, Unbans |
+| Fail2ban | /var/log/fail2ban.log | 7 Tage | Bans, Unbans |
+| Blocklist Updates | /var/log/icelaborvpn/blocklist-updates.log | 7 Tage | Feed-Updates, Fehler |
+| Syslog/Auth | /var/log/syslog, auth.log | 7 Tage | System, Authentifizierung |
 | Session Recordings | /opt/guacamole/record/ | 1 Jahr | Video-Aufzeichnungen |
 | Audit | /var/log/icelaborvpn/audit.log | 5 Jahre | Compliance Events |
+| systemd Journal | journalctl | 7 Tage / 100 MB | Alle systemd-Services |
 
 ### 9.2 Log-Aggregation
 
@@ -508,6 +517,72 @@ alerts:
     severity: warning
     action: notify_ops
 ```
+
+### 9.4 Threat Intelligence Blocklisten
+
+Proaktive Blockierung bekannter bösartiger IPs über OSINT-Feeds in eigener nftables-Tabelle.
+
+**Architektur:**
+```
+Internet Traffic
+      │
+      ▼
+┌─────────────────────────────────┐
+│  nftables: blocklist-table      │  Priority -10 (VOR fail2ban)
+│  ├── bl_spamhaus_v4 (CIDRs)    │  ~1,500 Einträge, alle 12h
+│  ├── bl_spamhaus_v6 (CIDRs)    │  ~100 Einträge, alle 12h
+│  ├── bl_tor_exit (IPs)          │  ~1,500 Einträge, alle 6h
+│  ├── bl_threats (IPs/CIDRs)    │  ~1,500 Einträge, alle 24h
+│  ├── bl_active_attacks (IPs)    │  ~25,000 Einträge, alle 6h
+│  └── bl_abuseipdb (IPs)        │  bis 10,000 Einträge, alle 24h
+│  → counter drop                │
+└─────────────────────────────────┘
+      │ (nicht geblockt)
+      ▼
+┌─────────────────────────────────┐
+│  nftables: fail2ban             │  Reaktive Blockierung
+│  (7 Jails + AbuseIPDB Report)   │
+└─────────────────────────────────┘
+```
+
+**Verwaltungsbefehle:**
+```bash
+# Status aller Feeds anzeigen
+/opt/IceLaborVPN/scripts/update-blocklists.sh --status
+
+# Einzelnen Feed manuell aktualisieren
+/opt/IceLaborVPN/scripts/update-blocklists.sh --feed tor
+
+# Alle Feeds aktualisieren
+/opt/IceLaborVPN/scripts/update-blocklists.sh --feed all
+
+# Set leeren (z.B. bei False Positive)
+/opt/IceLaborVPN/scripts/update-blocklists.sh --flush tor
+
+# nftables-Tabelle direkt prüfen
+nft list table inet blocklist-table
+
+# Timer-Status
+systemctl list-timers 'icelabor-blocklist*'
+```
+
+**Whitelist:** `/etc/icelabor-blocklists/whitelist.conf` schützt eigene IPs/Netze vor Blockierung.
+
+### 9.5 AbuseIPDB-Integration
+
+Alle 7 fail2ban-Jails melden gebannte IPs automatisch an AbuseIPDB mit passenden Angriffskategorien.
+
+| Jail | Kategorien | Beschreibung |
+|------|-----------|--------------|
+| sshd | 18, 22 | Brute-Force, SSH |
+| guacamole | 18, 21 | Brute-Force, Web App Attack |
+| nginx-limit-req | 21, 19 | Web App Attack, Bad Web Bot |
+| nginx-scan | 14, 21 | Port Scan, Web App Attack |
+| nginx-cred-harvest | 21, 15 | Web App Attack, Hacking |
+| nginx-http-auth | 18, 21 | Brute-Force, Web App Attack |
+| recidive | 18 | Brute-Force (Wiederholungstäter) |
+
+**API-Key:** `/etc/fail2ban/action.d/abuseipdb.local` (chmod 640, nicht in Git!)
 
 ---
 
@@ -785,6 +860,7 @@ Siehe `/opt/IceLaborVPN/config/` für alle Konfigurationsvorlagen.
 | Version | Datum | Autor | Änderungen |
 |---------|-------|-------|------------|
 | 1.0 | 2026-01-26 | IcePorge | Initiale Version |
+| 1.1 | 2026-02-07 | IcePorge | Threat Intelligence Blocklists, AbuseIPDB-Integration, Logrotate-Konsolidierung |
 
 ---
 

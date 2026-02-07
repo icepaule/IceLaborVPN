@@ -1,0 +1,9 @@
+[Unit]
+Description=IceLaborVPN Blocklist Update - Feed: %i
+After=icelabor-blocklist-init.service
+Requires=icelabor-blocklist-init.service
+
+[Service]
+Type=oneshot
+ExecStart=/opt/IceLaborVPN/scripts/update-blocklists.sh --feed %i
+TimeoutStartSec=120
