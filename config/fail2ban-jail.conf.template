@@ -56,6 +56,28 @@ maxretry = 1
 bantime = 86400
 banreason = Known malicious bot
 
+# ==========================================================================
+# Port/Vulnerability Scanner Detection with Progressive Banning
+# 1st ban: 5 min, 2nd: 15 min, 3rd+: 60 min
+# ==========================================================================
+[nginx-scan]
+enabled = true
+port = http,https
+filter = nginx-scan
+logpath = /var/log/nginx/access.log
+maxretry = 5
+findtime = 600
+
+# Progressive ban times via bantime.increment (requires fail2ban >= 0.11)
+bantime = 5m
+bantime.increment = true
+bantime.multipliers = 1 3 12
+bantime.maxtime = 1h
+bantime.overalljails = true
+
+action = nftables[type=allports]
+         pushover-notify
+
 [sshd]
 enabled = true
 port = ssh

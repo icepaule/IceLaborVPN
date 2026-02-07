@@ -29,9 +29,38 @@ PUSHOVER_API="https://api.pushover.net/1/messages.json"
 # Hostname for identification
 HOSTNAME="${HOSTNAME:-$(hostname)}"
 
+# Anti-flood: state file for deduplication
+DEDUP_DIR="/tmp/pushover-dedup"
+DEDUP_WINDOW=300  # 5 minutes - suppress duplicate notifications within this window
+mkdir -p "$DEDUP_DIR" 2>/dev/null
+
 # =============================================================================
 # Functions
 # =============================================================================
+
+# Check if a notification was recently sent (anti-flood)
+# Returns 0 if OK to send, 1 if duplicate
+check_dedup() {
+    local key="$1"
+    local hash=$(echo -n "$key" | md5sum | cut -d' ' -f1)
+    local file="$DEDUP_DIR/$hash"
+
+    # Clean up old entries (older than DEDUP_WINDOW)
+    find "$DEDUP_DIR" -type f -mmin +$((DEDUP_WINDOW / 60 + 1)) -delete 2>/dev/null
+
+    if [[ -f "$file" ]]; then
+        local file_age=$(( $(date +%s) - $(stat -c %Y "$file") ))
+        if [[ $file_age -lt $DEDUP_WINDOW ]]; then
+            # Count suppressed messages
+            local count=$(cat "$file")
+            echo $(( count + 1 )) > "$file"
+            return 1
+        fi
+    fi
+
+    echo "1" > "$file"
+    return 0
+}
 
 send_pushover() {
     local title="$1"
@@ -115,16 +144,33 @@ notify_ban() {
     local jail="${3:-guacamole}"
     local duration="${4:-3600}"
 
+    # Anti-flood: deduplicate by IP (same IP across jails within window)
+    local dedup_key="ban:${ip}"
+    if ! check_dedup "$dedup_key"; then
+        local suppressed=$(cat "$DEDUP_DIR/$(echo -n "$dedup_key" | md5sum | cut -d' ' -f1)" 2>/dev/null)
+        echo "Notification suppressed (${suppressed} events for $ip in ${DEDUP_WINDOW}s window)"
+        return 0
+    fi
+
     local title="🚫 IP Banned"
+
+    # Format duration human-readable
+    local dur_text="${duration}s"
+    if [[ "$duration" -ge 3600 ]]; then
+        dur_text="$((duration / 3600))h $((duration % 3600 / 60))m"
+    elif [[ "$duration" -ge 60 ]]; then
+        dur_text="$((duration / 60))m"
+    fi
+
     local message="<b>Fail2ban Triggered</b>
 
 IP: <code>$ip</code>
 Reason: $reason
 Jail: $jail
-Duration: ${duration}s"
+Duration: $dur_text"
 
     # GeoIP lookup
-    local geo=$(curl -s "http://ip-api.com/line/$ip?fields=country,city,isp" 2>/dev/null | tr '\n' ', ' | sed 's/,$//')
+    local geo=$(curl -s --max-time 3 "http://ip-api.com/line/$ip?fields=country,city,isp" 2>/dev/null | tr '\n' ', ' | sed 's/,$//')
     if [[ -n "$geo" ]]; then
         message="$message
 Location/ISP: $geo"
@@ -136,6 +182,13 @@ Location/ISP: $geo"
 notify_unban() {
     local ip="${1:-unknown}"
     local jail="${2:-guacamole}"
+
+    # Anti-flood: deduplicate unbans
+    local dedup_key="unban:${ip}"
+    if ! check_dedup "$dedup_key"; then
+        echo "Unban notification suppressed for $ip"
+        return 0
+    fi
 
     local title="✅ IP Unbanned"
     local message="IP <code>$ip</code> has been unbanned from jail <b>$jail</b>"

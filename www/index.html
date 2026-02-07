@@ -142,6 +142,174 @@
         }
         .card.unlocked .lock-badge { display: none; }
 
+        /* Fail2ban Panel */
+        .f2b-panel {
+            display: none;
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(100,255,218,0.15);
+            border-radius: 16px;
+            padding: 25px;
+            margin-bottom: 25px;
+        }
+        .f2b-panel.visible { display: block; }
+        .f2b-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .f2b-header h2 {
+            font-size: 1.3em;
+            color: #fff;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        .f2b-summary {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+        }
+        .f2b-stat {
+            background: rgba(255,255,255,0.03);
+            border: 1px solid rgba(100,255,218,0.1);
+            border-radius: 10px;
+            padding: 12px 20px;
+            text-align: center;
+            min-width: 120px;
+        }
+        .f2b-stat .value {
+            font-size: 1.8em;
+            font-weight: bold;
+            color: #64ffda;
+        }
+        .f2b-stat .label {
+            font-size: 0.75em;
+            color: #8892b0;
+            margin-top: 4px;
+        }
+        .f2b-stat.danger .value { color: #ff6b6b; }
+        .f2b-jail {
+            margin-bottom: 15px;
+        }
+        .f2b-jail-header {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px 15px;
+            background: rgba(100,255,218,0.05);
+            border-radius: 8px 8px 0 0;
+            border: 1px solid rgba(100,255,218,0.1);
+            border-bottom: none;
+            cursor: pointer;
+            user-select: none;
+        }
+        .f2b-jail-header:hover { background: rgba(100,255,218,0.08); }
+        .f2b-jail-name {
+            font-weight: 600;
+            color: #64ffda;
+            font-family: monospace;
+            font-size: 0.95em;
+        }
+        .f2b-jail-count {
+            background: rgba(255,107,107,0.15);
+            color: #ff6b6b;
+            padding: 2px 10px;
+            border-radius: 12px;
+            font-size: 0.75em;
+            font-weight: 600;
+        }
+        .f2b-jail-count.clean {
+            background: rgba(100,255,218,0.1);
+            color: #64ffda;
+        }
+        .f2b-jail-body {
+            border: 1px solid rgba(100,255,218,0.1);
+            border-radius: 0 0 8px 8px;
+            overflow: hidden;
+        }
+        .f2b-jail-body.collapsed { display: none; }
+        .f2b-ip-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 10px 15px;
+            border-bottom: 1px solid rgba(255,255,255,0.03);
+            transition: background 0.15s;
+        }
+        .f2b-ip-row:last-child { border-bottom: none; }
+        .f2b-ip-row:hover { background: rgba(255,255,255,0.02); }
+        .f2b-ip {
+            font-family: monospace;
+            color: #fff;
+            font-size: 0.9em;
+        }
+        .f2b-actions { display: flex; gap: 8px; }
+        .f2b-btn {
+            padding: 5px 14px;
+            border: none;
+            border-radius: 5px;
+            font-size: 0.78em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .f2b-btn-unban {
+            background: rgba(100,255,218,0.1);
+            color: #64ffda;
+            border: 1px solid rgba(100,255,218,0.25);
+        }
+        .f2b-btn-unban:hover {
+            background: rgba(100,255,218,0.2);
+        }
+        .f2b-btn-extend {
+            background: rgba(255,107,107,0.1);
+            color: #ff6b6b;
+            border: 1px solid rgba(255,107,107,0.25);
+        }
+        .f2b-btn-extend:hover {
+            background: rgba(255,107,107,0.2);
+        }
+        .f2b-btn:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+        }
+        .f2b-empty {
+            padding: 15px;
+            text-align: center;
+            color: #4a5568;
+            font-size: 0.85em;
+        }
+        .f2b-refresh-btn {
+            padding: 6px 16px;
+            background: rgba(100,255,218,0.08);
+            border: 1px solid rgba(100,255,218,0.2);
+            border-radius: 6px;
+            color: #64ffda;
+            font-size: 0.82em;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .f2b-refresh-btn:hover {
+            background: rgba(100,255,218,0.15);
+        }
+        .f2b-chevron {
+            color: #4a5568;
+            transition: transform 0.2s;
+            font-size: 0.8em;
+        }
+        .f2b-chevron.open { transform: rotate(90deg); }
+        .f2b-jail-stats {
+            margin-left: auto;
+            font-size: 0.75em;
+            color: #4a5568;
+        }
+        @media (max-width: 600px) {
+            .f2b-summary { flex-direction: column; }
+            .f2b-ip-row { flex-direction: column; gap: 8px; align-items: flex-start; }
+        }
+
         .footer { text-align: center; margin-top: 30px; color: #4a5568; font-size: 0.85em; }
         .footer a { color: #64ffda; text-decoration: none; }
         .footer a:hover { text-decoration: underline; }
@@ -188,6 +356,16 @@
 
         <div class="auth-notice">
             <p><span class="icon">🛡️</span> All services require authentication with TOTP/2FA - protected by fail2ban</p>
+        </div>
+
+        <!-- Fail2ban Dashboard (visible after login) -->
+        <div class="f2b-panel" id="f2bPanel">
+            <div class="f2b-header">
+                <h2>Fail2ban Status</h2>
+                <button class="f2b-refresh-btn" onclick="loadFail2ban()">Refresh</button>
+            </div>
+            <div class="f2b-summary" id="f2bSummary"></div>
+            <div id="f2bJails"></div>
         </div>
 
         <div class="cards">
@@ -274,6 +452,9 @@
                         const card = document.getElementById(id);
                         if (card) card.classList.add('unlocked');
                     });
+
+                    // Load fail2ban dashboard
+                    loadFail2ban();
                 } else {
                     statusDot.classList.remove('authenticated');
                     authText.classList.remove('authenticated');
@@ -292,6 +473,138 @@
                 authBar.classList.remove('loading');
                 authText.textContent = 'Authentication service unavailable';
             }
+        }
+
+        // Fail2ban Dashboard
+        async function loadFail2ban() {
+            const panel = document.getElementById('f2bPanel');
+            const summary = document.getElementById('f2bSummary');
+            const jailsDiv = document.getElementById('f2bJails');
+
+            try {
+                const resp = await fetch('/auth/fail2ban');
+                if (resp.status === 401) {
+                    panel.classList.remove('visible');
+                    return;
+                }
+                const data = await resp.json();
+                if (data.error) {
+                    jailsDiv.innerHTML = '<div class="f2b-empty">Fail2ban not available</div>';
+                    return;
+                }
+
+                panel.classList.add('visible');
+
+                // Summary stats
+                const totalJails = data.jails.length;
+                const totalBanned = data.total_banned;
+                const totalFailed = data.jails.reduce((s, j) => s + j.total_failed, 0);
+                summary.innerHTML = `
+                    <div class="f2b-stat${totalBanned > 0 ? ' danger' : ''}">
+                        <div class="value">${totalBanned}</div>
+                        <div class="label">Currently Banned</div>
+                    </div>
+                    <div class="f2b-stat">
+                        <div class="value">${totalJails}</div>
+                        <div class="label">Active Jails</div>
+                    </div>
+                    <div class="f2b-stat">
+                        <div class="value">${totalFailed}</div>
+                        <div class="label">Total Failed</div>
+                    </div>
+                `;
+
+                // Jail details
+                if (data.jails.length === 0) {
+                    jailsDiv.innerHTML = '<div class="f2b-empty">No jails configured</div>';
+                    return;
+                }
+
+                jailsDiv.innerHTML = data.jails.map(jail => {
+                    const hasBans = jail.banned_ips.length > 0;
+                    const countClass = hasBans ? '' : ' clean';
+                    const collapsed = hasBans ? '' : ' collapsed';
+                    const chevronClass = hasBans ? ' open' : '';
+
+                    const ipRows = hasBans
+                        ? jail.banned_ips.map(ip => `
+                            <div class="f2b-ip-row">
+                                <span class="f2b-ip">${escapeHtml(ip)}</span>
+                                <div class="f2b-actions">
+                                    <button class="f2b-btn f2b-btn-unban" onclick="f2bUnban('${escapeHtml(jail.name)}','${escapeHtml(ip)}')">Unban</button>
+                                    <button class="f2b-btn f2b-btn-extend" onclick="f2bBan('${escapeHtml(jail.name)}','${escapeHtml(ip)}')">Re-Ban</button>
+                                </div>
+                            </div>
+                        `).join('')
+                        : '<div class="f2b-empty">No banned IPs</div>';
+
+                    return `
+                        <div class="f2b-jail">
+                            <div class="f2b-jail-header" onclick="toggleJail(this)">
+                                <span class="f2b-chevron${chevronClass}">&#9654;</span>
+                                <span class="f2b-jail-name">${escapeHtml(jail.name)}</span>
+                                <span class="f2b-jail-count${countClass}">${jail.currently_banned} banned</span>
+                                <span class="f2b-jail-stats">${jail.total_failed} failed / ${jail.total_banned} total bans</span>
+                            </div>
+                            <div class="f2b-jail-body${collapsed}">${ipRows}</div>
+                        </div>
+                    `;
+                }).join('');
+
+            } catch (err) {
+                console.error('Fail2ban load error:', err);
+            }
+        }
+
+        function toggleJail(header) {
+            const body = header.nextElementSibling;
+            const chevron = header.querySelector('.f2b-chevron');
+            body.classList.toggle('collapsed');
+            chevron.classList.toggle('open');
+        }
+
+        async function f2bUnban(jail, ip) {
+            if (!confirm(`Unban ${ip} from ${jail}?`)) return;
+            try {
+                const resp = await fetch('/auth/fail2ban/unban', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({jail, ip})
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    loadFail2ban();
+                } else {
+                    alert('Unban failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('Request failed: ' + err.message);
+            }
+        }
+
+        async function f2bBan(jail, ip) {
+            if (!confirm(`Re-ban ${ip} in ${jail}? (resets ban timer)`)) return;
+            try {
+                const resp = await fetch('/auth/fail2ban/ban', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({jail, ip})
+                });
+                const data = await resp.json();
+                if (data.success) {
+                    loadFail2ban();
+                } else {
+                    alert('Ban failed: ' + (data.error || 'Unknown error'));
+                }
+            } catch (err) {
+                alert('Request failed: ' + err.message);
+            }
+        }
+
+        function escapeHtml(str) {
+            const d = document.createElement('div');
+            d.textContent = str;
+            return d.innerHTML;
         }
 
         // Run on page load

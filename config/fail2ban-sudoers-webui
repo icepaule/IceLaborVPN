@@ -1,0 +1,7 @@
+# Allow www-data (auth-gate) to manage fail2ban via web UI
+# Install to /etc/sudoers.d/fail2ban-webui with mode 0440
+www-data ALL=(root) NOPASSWD: /usr/bin/fail2ban-client status
+www-data ALL=(root) NOPASSWD: /usr/bin/fail2ban-client status *
+www-data ALL=(root) NOPASSWD: /usr/bin/fail2ban-client get * bantime
+www-data ALL=(root) NOPASSWD: /usr/bin/fail2ban-client set * unbanip *
+www-data ALL=(root) NOPASSWD: /usr/bin/fail2ban-client set * banip *

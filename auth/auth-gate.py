@@ -1,18 +1,17 @@
 #!/usr/bin/env python3
 """
-IceLaborVPN Authentication Gate
+IceLaborVPN Authentication Gate v2
 Validates authentication via Guacamole before allowing access to any service.
 
 All services (including Guacamole) are protected. Users authenticate via
 the /auth/login page which validates credentials against Guacamole's API.
-
-This ensures that fail2ban and TOTP 2FA protect ALL services.
 """
 
 import os
 import json
 import secrets
 import time
+import subprocess
 import urllib.request
 import urllib.error
 import ssl
@@ -21,13 +20,13 @@ from http.cookies import SimpleCookie
 from urllib.parse import parse_qs, urlparse, urlencode
 
 # Configuration
-LISTEN_HOST = os.environ.get('AUTH_LISTEN_HOST', '127.0.0.1')
-LISTEN_PORT = int(os.environ.get('AUTH_LISTEN_PORT', '8089'))
-SESSION_TIMEOUT = int(os.environ.get('AUTH_SESSION_TIMEOUT', str(3600 * 8)))  # 8 hours default
-GUACAMOLE_API = os.environ.get('GUACAMOLE_API', 'http://127.0.0.1:8085/guacamole/api')
+LISTEN_HOST = '127.0.0.1'
+LISTEN_PORT = 8089
+SESSION_TIMEOUT = 3600 * 8  # 8 hours
+GUACAMOLE_API = 'http://127.0.0.1:8085/guacamole/api'
 SECRET_KEY = os.environ.get('AUTH_SECRET_KEY', secrets.token_hex(32))
 
-# In-memory session store (use Redis in production for multi-instance)
+# In-memory session store
 sessions = {}
 
 def authenticate_guacamole(username, password, totp=None):
@@ -115,6 +114,136 @@ def cleanup_sessions():
     expired = [sid for sid, s in sessions.items() if now - s['created'] > SESSION_TIMEOUT]
     for sid in expired:
         del sessions[sid]
+
+# ==========================================================================
+# Fail2ban Management
+# ==========================================================================
+
+def get_fail2ban_status():
+    """Get status of all fail2ban jails with banned IPs."""
+    try:
+        result = subprocess.run(
+            ['sudo', 'fail2ban-client', 'status'],
+            capture_output=True, text=True, timeout=5
+        )
+        if result.returncode != 0:
+            return {'error': 'Failed to query fail2ban'}
+
+        # Parse jail list from output
+        jails = []
+        for line in result.stdout.splitlines():
+            if 'Jail list:' in line:
+                jail_names = [j.strip() for j in line.split(':', 1)[1].split(',')]
+                break
+        else:
+            return {'jails': [], 'total_banned': 0}
+
+        total_banned = 0
+        for jail_name in jail_names:
+            jail_info = _get_jail_status(jail_name)
+            if jail_info:
+                jails.append(jail_info)
+                total_banned += jail_info['currently_banned']
+
+        return {'jails': jails, 'total_banned': total_banned}
+    except Exception as e:
+        print(f"[AUTH] fail2ban status error: {e}")
+        return {'error': str(e)}
+
+def _get_jail_status(jail_name):
+    """Get detailed status for a single jail."""
+    try:
+        result = subprocess.run(
+            ['sudo', 'fail2ban-client', 'status', jail_name],
+            capture_output=True, text=True, timeout=5
+        )
+        if result.returncode != 0:
+            return None
+
+        info = {
+            'name': jail_name,
+            'currently_failed': 0,
+            'total_failed': 0,
+            'currently_banned': 0,
+            'total_banned': 0,
+            'banned_ips': []
+        }
+
+        for line in result.stdout.splitlines():
+            line = line.strip()
+            if 'Currently failed:' in line:
+                info['currently_failed'] = int(line.split(':')[-1].strip())
+            elif 'Total failed:' in line:
+                info['total_failed'] = int(line.split(':')[-1].strip())
+            elif 'Currently banned:' in line:
+                info['currently_banned'] = int(line.split(':')[-1].strip())
+            elif 'Total banned:' in line:
+                info['total_banned'] = int(line.split(':')[-1].strip())
+            elif 'Banned IP list:' in line:
+                ip_str = line.split(':',1)[-1].strip()
+                if ip_str:
+                    info['banned_ips'] = [ip.strip() for ip in ip_str.split()]
+
+        return info
+    except Exception as e:
+        print(f"[AUTH] jail status error for {jail_name}: {e}")
+        return None
+
+def fail2ban_unban(jail, ip):
+    """Unban an IP from a specific jail."""
+    # Validate inputs to prevent command injection
+    if not jail.replace('-', '').replace('_', '').isalnum():
+        return {'success': False, 'error': 'Invalid jail name'}
+    if not _is_valid_ip(ip):
+        return {'success': False, 'error': 'Invalid IP address'}
+
+    try:
+        result = subprocess.run(
+            ['sudo', 'fail2ban-client', 'set', jail, 'unbanip', ip],
+            capture_output=True, text=True, timeout=5
+        )
+        if result.returncode == 0:
+            print(f"[AUTH] Unbanned {ip} from {jail}")
+            return {'success': True}
+        else:
+            return {'success': False, 'error': result.stderr.strip() or result.stdout.strip()}
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+def fail2ban_ban(jail, ip, bantime=None):
+    """Ban an IP in a specific jail, optionally with custom bantime."""
+    if not jail.replace('-', '').replace('_', '').isalnum():
+        return {'success': False, 'error': 'Invalid jail name'}
+    if not _is_valid_ip(ip):
+        return {'success': False, 'error': 'Invalid IP address'}
+
+    try:
+        # First unban if already banned (to reset timer)
+        subprocess.run(
+            ['sudo', 'fail2ban-client', 'set', jail, 'unbanip', ip],
+            capture_output=True, text=True, timeout=5
+        )
+        # Now ban with optional custom bantime
+        cmd = ['sudo', 'fail2ban-client', 'set', jail, 'banip', ip]
+        result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+        if result.returncode == 0:
+            print(f"[AUTH] Banned {ip} in {jail}")
+            return {'success': True}
+        else:
+            return {'success': False, 'error': result.stderr.strip() or result.stdout.strip()}
+    except Exception as e:
+        return {'success': False, 'error': str(e)}
+
+def _is_valid_ip(ip):
+    """Basic IP address validation."""
+    import re
+    # IPv4
+    if re.match(r'^(\d{1,3}\.){3}\d{1,3}$', ip):
+        return all(0 <= int(p) <= 255 for p in ip.split('.'))
+    # IPv6 (simplified check)
+    if re.match(r'^[0-9a-fA-F:]+$', ip) and ':' in ip:
+        return True
+    return False
 
 # HTML Templates
 LOGIN_PAGE = '''<!DOCTYPE html>
@@ -427,6 +556,16 @@ class AuthHandler(BaseHTTPRequestHandler):
                 'username': username
             })
 
+        elif path == '/auth/fail2ban':
+            # Fail2ban status - requires authentication
+            session_id = self.get_cookie('icelabor_session')
+            if not verify_session(session_id):
+                self.send_json(401, {'error': 'Not authenticated'})
+                return
+
+            status = get_fail2ban_status()
+            self.send_json(200, status)
+
         else:
             self.send_response(404)
             self.end_headers()
@@ -438,7 +577,57 @@ class AuthHandler(BaseHTTPRequestHandler):
         content_length = int(self.headers.get('Content-Length', 0))
         body = self.rfile.read(content_length) if content_length > 0 else b''
 
-        if path == '/auth/login':
+        if path == '/auth/fail2ban/unban':
+            # Unban IP - requires authentication
+            session_id = self.get_cookie('icelabor_session')
+            if not verify_session(session_id):
+                self.send_json(401, {'error': 'Not authenticated'})
+                return
+
+            try:
+                data = json.loads(body.decode('utf-8'))
+                jail = data.get('jail', '')
+                ip = data.get('ip', '')
+            except (json.JSONDecodeError, AttributeError):
+                self.send_json(400, {'error': 'Invalid JSON'})
+                return
+
+            if not jail or not ip:
+                self.send_json(400, {'error': 'Missing jail or ip'})
+                return
+
+            user = get_session_user(session_id)
+            print(f"[AUTH] User {user} requested unban of {ip} from {jail}")
+            result = fail2ban_unban(jail, ip)
+            self.send_json(200 if result['success'] else 400, result)
+            return
+
+        elif path == '/auth/fail2ban/ban':
+            # Ban IP - requires authentication
+            session_id = self.get_cookie('icelabor_session')
+            if not verify_session(session_id):
+                self.send_json(401, {'error': 'Not authenticated'})
+                return
+
+            try:
+                data = json.loads(body.decode('utf-8'))
+                jail = data.get('jail', '')
+                ip = data.get('ip', '')
+            except (json.JSONDecodeError, AttributeError):
+                self.send_json(400, {'error': 'Invalid JSON'})
+                return
+
+            if not jail or not ip:
+                self.send_json(400, {'error': 'Missing jail or ip'})
+                return
+
+            user = get_session_user(session_id)
+            print(f"[AUTH] User {user} requested ban of {ip} in {jail}")
+            result = fail2ban_ban(jail, ip)
+            self.send_json(200 if result['success'] else 400, result)
+            return
+
+        elif path == '/auth/login':
             # Parse form data
             form_data = parse_qs(body.decode('utf-8'))
             username = form_data.get('username', [''])[0]
@@ -491,9 +680,7 @@ class AuthHandler(BaseHTTPRequestHandler):
             self.end_headers()
 
 def main():
-    print(f"[AUTH] IceLaborVPN Auth Gate starting on {LISTEN_HOST}:{LISTEN_PORT}")
-    print(f"[AUTH] Guacamole API: {GUACAMOLE_API}")
-    print(f"[AUTH] Session timeout: {SESSION_TIMEOUT}s")
+    print(f"[AUTH] IceLaborVPN Auth Gate v2 starting on {LISTEN_HOST}:{LISTEN_PORT}")
     server = HTTPServer((LISTEN_HOST, LISTEN_PORT), AuthHandler)
     try:
         server.serve_forever()

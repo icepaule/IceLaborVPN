@@ -20,8 +20,10 @@ IceLaborVPN provides secure, browser-based remote access to isolated malware ana
 - **HTML5 Remote Access** - SSH, VNC, RDP via browser (Apache Guacamole)
 - **Multi-Factor Authentication** - TOTP/2FA mandatory for all users
 - **Session Recording** - Full audit trail for compliance
-- **Brute-Force Protection** - Multi-layer defense (Guacamole, nginx, Fail2ban)
-- **Real-time Alerts** - Pushover notifications for security events
+- **Progressive Brute-Force Protection** - Multi-layer defense with escalating ban times (5 min → 15 min → 60 min)
+- **Fail2ban Web Dashboard** - View and manage bans directly from the portal (after login)
+- **Real-time Alerts** - Pushover notifications with anti-flood deduplication
+- **Scanner Detection** - Automatic detection and banning of nmap/vulnerability scanners
 - **DORA/MITRE Compliant** - Comprehensive documentation for regulators
 
 ---
@@ -175,18 +177,28 @@ The script scans all online nodes for SSH (22), RDP (3389), VNC (5900) and manag
 | TLS 1.3 | Transport encryption |
 | nginx Rate Limiting | 5 logins/min, 30 req/sec |
 | Guacamole Brute-Force | 5 attempts → 5 min ban |
-| Fail2ban | 5 attempts → 1 hour firewall ban |
+| Fail2ban (Progressive) | 5 attempts → 5 min → 15 min → 60 min ban |
+| Scanner Detection | nmap/vuln scanner auto-ban on all ports |
 | TOTP/2FA | Mandatory second factor |
 | Session Timeout | 60 minutes inactivity |
 
+### Fail2ban Web Dashboard
+
+After logging in, the portal displays a live Fail2ban status panel:
+
+- **Overview** - Currently banned IPs, active jails, total failed attempts
+- **Per-Jail Details** - Expandable list of banned IPs per jail
+- **Management** - Unban or re-ban IPs directly from the browser
+- **Progressive Banning** - Repeat offenders get escalating ban times (5 min → 15 min → 60 min)
+
 ### Monitoring & Alerting
 
-Real-time Pushover notifications for:
-- ✅ Successful logins
-- ✅ Session starts (SSH/VNC/RDP)
-- 🚫 IP bans (Fail2ban)
-- ⚠️ Attack detection (SQLi, XSS, scanners)
-- 🔴 Service failures
+Real-time Pushover notifications with anti-flood deduplication (same IP only notified once per 5 min):
+- Successful logins
+- Session starts (SSH/VNC/RDP)
+- IP bans (Fail2ban) with GeoIP info
+- Scanner/attack detection
+- Service failures
 
 ### Compliance
 
@@ -228,6 +240,10 @@ IceLaborVPN/
 │   ├── guacamole-monitor.sh # Session monitor
 │   └── headscale-onboard.sh # Node onboarding
 ├── config/                # Configuration templates
+│   ├── fail2ban-jail.conf.template    # Fail2ban jails (incl. progressive banning)
+│   ├── fail2ban-filter-nginx-scan.conf # Scanner detection filter
+│   ├── fail2ban-action-pushover.conf  # Pushover notification action
+│   └── fail2ban-sudoers-webui        # Sudoers for web UI management
 ├── guacamole/             # Docker compose & SQL
 ├── nginx/                 # Nginx configuration
 ├── systemd/               # Service files
@@ -267,8 +283,11 @@ tailscale ping <TAILSCALE_IP>
 
 **Fail2ban blocking legitimate users**
 ```bash
-# Unban IP
+# Unban IP via CLI
 sudo fail2ban-client set guacamole unbanip 192.0.2.1
+
+# Or use the web dashboard (after login at https://your-domain.com)
+# The Fail2ban panel shows all banned IPs with Unban/Re-Ban buttons
 ```
 
 ---
