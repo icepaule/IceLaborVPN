@@ -310,6 +310,59 @@
             .f2b-ip-row { flex-direction: column; gap: 8px; align-items: flex-start; }
         }
 
+        /* Section Dividers */
+        .section-divider {
+            text-align: center;
+            margin: 40px 0 25px;
+            position: relative;
+        }
+        .section-divider::before {
+            content: "";
+            position: absolute;
+            top: 50%;
+            left: 0; right: 0;
+            height: 1px;
+            background: rgba(100,255,218,0.15);
+        }
+        .section-divider h2 {
+            display: inline-block;
+            background: #12122b;
+            padding: 0 20px;
+            position: relative;
+            font-size: 1.3em;
+            background: linear-gradient(90deg, #64ffda, #48bb78);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+        .section-note {
+            color: #4a5568;
+            font-size: 0.85em;
+            margin-top: 8px;
+        }
+        .category-label {
+            grid-column: 1 / -1;
+            color: #8892b0;
+            font-size: 0.75em;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            padding: 8px 0 0;
+            border-bottom: 1px solid rgba(100,255,218,0.08);
+        }
+        .card .vpn-badge {
+            position: absolute;
+            top: 12px;
+            right: 12px;
+            font-size: 0.6em;
+            background: rgba(72,187,120,0.12);
+            color: #48bb78;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-family: monospace;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
         .footer { text-align: center; margin-top: 30px; color: #4a5568; font-size: 0.85em; }
         .footer a { color: #64ffda; text-decoration: none; }
         .footer a:hover { text-decoration: underline; }
@@ -415,6 +468,200 @@
                 <h3>NAS Storage</h3>
                 <p>Synology DiskStation. File sharing, backups and storage management.</p>
                 <span class="badge">Synology DSM</span>
+            </a>
+        </div>
+
+        <!-- ============================================================ -->
+        <!-- Internal Services (VPN only)                                 -->
+        <!-- ============================================================ -->
+        <!-- NOTE: Replace placeholder IPs (ROUTER_IP, NAS_IP, etc.) with your actual internal addresses -->
+        <div class="section-divider">
+            <h2>Internal Services</h2>
+            <p class="section-note">Accessible via Tailscale VPN only</p>
+        </div>
+
+        <div class="cards">
+            <!-- Netzwerk & Switches -->
+            <div class="category-label">Netzwerk & Switches</div>
+
+            <a href="http://ROUTER_IP/" class="card" target="_blank">
+                <span class="vpn-badge">VPN</span>
+                <div class="card-icon">📡</div>
+                <h3>Fritz!Box</h3>
+                <p>Home router administration. DSL, DHCP, port forwarding and telephony.</p>
+                <span class="badge">AVM Fritz!Box</span>
+            </a>
+
+            <a href="https://UNIFI_IP/" class="card" target="_blank">
+                <span class="vpn-badge">VPN</span>
+                <div class="card-icon">🌐</div>
+                <h3>UniFi Console</h3>
+                <p>UniFi network controller. Access points, switches and network topology.</p>
+                <span class="badge">Ubiquiti UniFi</span>
+            </a>
+
+            <a href="http://SWITCH_BACKBONE_IP/" class="card" target="_blank">
+                <span class="vpn-badge">VPN</span>
+                <div class="card-icon">🔌</div>
+                <h3>SW BackBone</h3>
+                <p>Core backbone switch administration.</p>
+                <span class="badge">Switch</span>
+            </a>
+
+            <a href="http://SWITCH_AZ_IP/index.html" class="card" target="_blank">
+                <span class="vpn-badge">VPN</span>
+                <div class="card-icon">🔌</div>
+                <h3>SW AZ</h3>
+                <p>Office network switch administration.</p>
+                <span class="badge">Switch</span>
+            </a>
+
+            <a href="http://SWITCH_KELLER_IP/index.html" class="card" target="_blank">
+                <span class="vpn-badge">VPN</span>
+                <div class="card-icon">🔌</div>
+                <h3>SW Keller</h3>
+                <p>Basement network switch administration.</p>
+                <span class="badge">Switch</span>
+            </a>
+
+            <a href="http://HASS_IP:8123/local/radar2.html" class="card" target="_blank">
+                <span class="vpn-badge">VPN</span>
+                <div class="card-icon">📶</div>
+                <h3>WiFi-Radar</h3>
+                <p>Wireless network monitoring and signal visualization.</p>
+                <span class="badge">WiFi Monitor</span>
+            </a>
+
+            <!-- Monitoring & Security -->
+            <div class="category-label">Monitoring & Security</div>
+
+            <a href="http://CHECKMK_IP/SITE/check_mk/login.py?_origtarget=index.py" class="card" target="_blank">
+                <span class="vpn-badge">VPN</span>
+                <div class="card-icon">📊</div>
+                <h3>CheckMK</h3>
+                <p>Infrastructure monitoring. Hosts, services, alerts and performance graphs.</p>
+                <span class="badge">Checkmk</span>
+            </a>
+
+            <a href="http://SPLUNK_IP:8000/" class="card" target="_blank">
+                <span class="vpn-badge">VPN</span>
+                <div class="card-icon">🔍</div>
+                <h3>Splunk</h3>
+                <p>SIEM and log analytics. Search, dashboards, alerts and forensic analysis.</p>
+                <span class="badge">Splunk Enterprise</span>
+            </a>
+
+            <a href="http://NAS_IP:7575/" class="card" target="_blank">
+                <span class="vpn-badge">VPN</span>
+                <div class="card-icon">📋</div>
+                <h3>Homarr</h3>
+                <p>Service dashboard. Overview of all running services and quick links.</p>
+                <span class="badge">Homarr</span>
+            </a>
+
+            <!-- Produktivitaet -->
+            <div class="category-label">Produktivit&auml;t</div>
+
+            <a href="http://CONFLUENCE_IP:8090/" class="card" target="_blank">
+                <span class="vpn-badge">VPN</span>
+                <div class="card-icon">📝</div>
+                <h3>Confluence</h3>
+                <p>Wiki and documentation platform. Knowledge base, procedures and project docs.</p>
+                <span class="badge">Atlassian</span>
+            </a>
+
+            <a href="http://NAS_IP:8082/" class="card" target="_blank">
+                <span class="vpn-badge">VPN</span>
+                <div class="card-icon">☁️</div>
+                <h3>NextCloud</h3>
+                <p>Private cloud storage. File sync, sharing, calendar and contacts.</p>
+                <span class="badge">NextCloud</span>
+            </a>
+
+            <a href="http://HASS_IP:8010/" class="card" target="_blank">
+                <span class="vpn-badge">VPN</span>
+                <div class="card-icon">📄</div>
+                <h3>PaperlessNGX</h3>
+                <p>Document management system. Scan, OCR, tag and archive documents.</p>
+                <span class="badge">Paperless-ngx</span>
+            </a>
+
+            <a href="http://NAS_IP:8000/" class="card" target="_blank">
+                <span class="vpn-badge">VPN</span>
+                <div class="card-icon">⏱️</div>
+                <h3>SolidTime</h3>
+                <p>Time tracking for projects and tasks.</p>
+                <span class="badge">SolidTime</span>
+            </a>
+
+            <!-- AI & Anwendungen -->
+            <div class="category-label">AI & Anwendungen</div>
+
+            <a href="http://NAS_IP:3333/" class="card" target="_blank">
+                <span class="vpn-badge">VPN</span>
+                <div class="card-icon">🤖</div>
+                <h3>OpenWebUI</h3>
+                <p>AI chat interface. Local LLM interaction and prompt management.</p>
+                <span class="badge">Open WebUI</span>
+            </a>
+
+            <a href="http://APP_SERVER_IP:8787/" class="card" target="_blank">
+                <span class="vpn-badge">VPN</span>
+                <div class="card-icon">🧾</div>
+                <h3>TAX AI</h3>
+                <p>AI-powered tax assistant for analysis and document processing.</p>
+                <span class="badge">TAX AI</span>
+            </a>
+
+            <a href="http://APP_SERVER_IP:8080/index.html" class="card" target="_blank">
+                <span class="vpn-badge">VPN</span>
+                <div class="card-icon">📈</div>
+                <h3>IceDataEmphasise</h3>
+                <p>Data analytics and visualization platform.</p>
+                <span class="badge">Analytics</span>
+            </a>
+
+            <a href="http://APP_SERVER_IP:9000" class="card" target="_blank">
+                <span class="vpn-badge">VPN</span>
+                <div class="card-icon">🎲</div>
+                <h3>Cribbl</h3>
+                <p>Collaborative drawing and guessing game for team building.</p>
+                <span class="badge">Cribbl</span>
+            </a>
+
+            <!-- Infrastruktur -->
+            <div class="category-label">Infrastruktur</div>
+
+            <a href="https://NAS_IP:5001/#/signin" class="card" target="_blank">
+                <span class="vpn-badge">VPN</span>
+                <div class="card-icon">💾</div>
+                <h3>SyNAS</h3>
+                <p>Synology NAS administration. Storage, backups and Docker containers.</p>
+                <span class="badge">Synology DSM</span>
+            </a>
+
+            <a href="https://MAIL_IP:9443/" class="card" target="_blank">
+                <span class="vpn-badge">VPN</span>
+                <div class="card-icon">📧</div>
+                <h3>Axigen Admin</h3>
+                <p>Mail server administration. Accounts, domains and mail flow management.</p>
+                <span class="badge">Axigen</span>
+            </a>
+
+            <a href="http://HASS_IP:8123/" class="card" target="_blank">
+                <span class="vpn-badge">VPN</span>
+                <div class="card-icon">🏠</div>
+                <h3>Home Assistant</h3>
+                <p>Smart home automation. Devices, scenes, automations and energy monitoring.</p>
+                <span class="badge">Home Assistant</span>
+            </a>
+
+            <a href="http://HASS_IP:8123/local/thw_3d_katalog.html" class="card" target="_blank">
+                <span class="vpn-badge">VPN</span>
+                <div class="card-icon">🖨️</div>
+                <h3>THW 3D-Druck Katalog</h3>
+                <p>3D printing catalog for THW equipment and replacement parts.</p>
+                <span class="badge">3D Print</span>
             </a>
         </div>
 
