@@ -116,6 +116,75 @@ action = nftables[type=allports]
          abuseipdb[abuseipdb_category="18,21"]
 
 # ==========================================================================
+# Directory Traversal Detection
+# Single attempt = immediate ban (always malicious)
+# ==========================================================================
+[nginx-traversal]
+enabled = true
+port = http,https
+filter = nginx-traversal
+logpath = /var/log/nginx/access.log
+maxretry = 1
+findtime = 3600
+bantime = 1h
+
+action = nftables[type=allports]
+         pushover-notify[reason="Directory traversal attack - BLOCKED"]
+         abuseipdb[abuseipdb_category="15,21"]
+
+# ==========================================================================
+# Sensitive File Probe Detection (.env, .git, credentials, wp-config etc.)
+# Single attempt = immediate ban (always malicious)
+# ==========================================================================
+[nginx-sensitive-files]
+enabled = true
+port = http,https
+filter = nginx-sensitive-files
+logpath = /var/log/nginx/access.log
+maxretry = 1
+findtime = 3600
+bantime = 1h
+
+action = nftables[type=allports]
+         pushover-notify[reason="Sensitive file probe (.env/.git/credentials) - BLOCKED"]
+         abuseipdb[abuseipdb_category="15,21"]
+
+# ==========================================================================
+# PHP/Admin Panel Probe Detection
+# No PHP on this server - any .php or admin panel request is malicious
+# ==========================================================================
+[nginx-php-probes]
+enabled = true
+port = http,https
+filter = nginx-php-probes
+logpath = /var/log/nginx/access.log
+maxretry = 2
+findtime = 3600
+bantime = 1h
+
+action = nftables[type=allports]
+         pushover-notify[reason="PHP/admin panel probe - BLOCKED"]
+         abuseipdb[abuseipdb_category="15,21"]
+
+# ==========================================================================
+# RCE/Shell Injection and Scanner Tool Detection
+# Catches cgi-bin, Log4Shell/JNDI, shell commands, scanner user-agents
+# Single attempt = immediate ban (always malicious)
+# ==========================================================================
+[nginx-rce-attempts]
+enabled = true
+port = http,https
+filter = nginx-rce-attempts
+logpath = /var/log/nginx/access.log
+maxretry = 1
+findtime = 3600
+bantime = 1h
+
+action = nftables[type=allports]
+         pushover-notify[reason="RCE/shell injection attempt - BLOCKED"]
+         abuseipdb[abuseipdb_category="15,21"]
+
+# ==========================================================================
 # Recidive: catch repeat offenders across ALL jails
 # If an IP gets banned 3 times within 12 hours, ban for 1 week
 # ==========================================================================

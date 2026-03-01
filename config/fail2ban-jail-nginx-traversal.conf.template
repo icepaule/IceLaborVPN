@@ -1,0 +1,15 @@
+# Ban directory traversal attempts immediately for 1 hour
+# Single attempt = ban (these are always malicious)
+
+[nginx-traversal]
+enabled = true
+port = http,https
+filter = nginx-traversal
+logpath = /var/log/nginx/access.log
+maxretry = 1
+findtime = 3600
+bantime = 1h
+
+action = nftables[type=allports]
+         pushover-notify[reason="Directory traversal attack - BLOCKED"]
+         abuseipdb[abuseipdb_category="15,21"]

@@ -1,0 +1,15 @@
+# Ban RCE/shell injection and scanner tool attempts
+# Single attempt = ban (always malicious)
+
+[nginx-rce-attempts]
+enabled = true
+port = http,https
+filter = nginx-rce-attempts
+logpath = /var/log/nginx/access.log
+maxretry = 1
+findtime = 3600
+bantime = 1h
+
+action = nftables[type=allports]
+         pushover-notify[reason="RCE/shell injection attempt - BLOCKED"]
+         abuseipdb[abuseipdb_category="15,21"]

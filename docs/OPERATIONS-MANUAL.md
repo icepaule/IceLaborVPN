@@ -107,7 +107,7 @@ IceLaborVPN ermöglicht:
 | Headscale | 0.23.x | WireGuard VPN Control Plane | 8080 |
 | Guacamole | 1.5.x | HTML5 Remote Access | 8085 |
 | PostgreSQL | 15.x | Guacamole Database | 5432 |
-| Fail2ban | 1.0.x | Intrusion Prevention (7 jails + AbuseIPDB) | - |
+| Fail2ban | 1.0.x | Intrusion Prevention (11 jails + AbuseIPDB) | - |
 | Tailscale | Latest | VPN Client | 41641/UDP |
 
 ### 2.3 Datenfluss
@@ -131,7 +131,12 @@ Layer 0: Threat Intelligence (Proactive)
 Layer 1: Network Security (Reactive)
 ├── Firewall (nftables)
 ├── Rate Limiting (nginx)
-├── Fail2ban (7 Jails, progressive banning)
+├── Fail2ban (11 Jails, progressive banning)
+│   ├── Auth: sshd, guacamole, nginx-http-auth
+│   ├── Scan: nginx-scan, nginx-limit-req
+│   ├── Attack: nginx-traversal, nginx-sensitive-files, nginx-php-probes, nginx-rce-attempts
+│   ├── Harvest: nginx-cred-harvest
+│   └── Recidive: repeat offenders across all jails
 └── AbuseIPDB Reporting (community threat intelligence)
 
 Layer 2: Transport Security
@@ -541,7 +546,7 @@ Internet Traffic
       ▼
 ┌─────────────────────────────────┐
 │  nftables: fail2ban             │  Reaktive Blockierung
-│  (7 Jails + AbuseIPDB Report)   │
+│  (11 Jails + AbuseIPDB Report)  │
 └─────────────────────────────────┘
 ```
 
@@ -570,17 +575,21 @@ systemctl list-timers 'icelabor-blocklist*'
 
 ### 9.5 AbuseIPDB-Integration
 
-Alle 7 fail2ban-Jails melden gebannte IPs automatisch an AbuseIPDB mit passenden Angriffskategorien.
+Alle 11 fail2ban-Jails melden gebannte IPs automatisch an AbuseIPDB mit passenden Angriffskategorien.
 
-| Jail | Kategorien | Beschreibung |
-|------|-----------|--------------|
-| sshd | 18, 22 | Brute-Force, SSH |
-| guacamole | 18, 21 | Brute-Force, Web App Attack |
-| nginx-limit-req | 21, 19 | Web App Attack, Bad Web Bot |
-| nginx-scan | 14, 21 | Port Scan, Web App Attack |
-| nginx-cred-harvest | 21, 15 | Web App Attack, Hacking |
-| nginx-http-auth | 18, 21 | Brute-Force, Web App Attack |
-| recidive | 18 | Brute-Force (Wiederholungstäter) |
+| Jail | Kategorien | Beschreibung | Trigger |
+|------|-----------|--------------|---------|
+| sshd | 18, 22 | Brute-Force, SSH | 5 Fehlversuche |
+| guacamole | 18, 21 | Brute-Force, Web App Attack | 5 Fehlversuche |
+| nginx-limit-req | 21, 19 | Web App Attack, Bad Web Bot | 10 Rate-Limit-Verletzungen |
+| nginx-scan | 14, 21 | Port Scan, Web App Attack | 5 verdaechtige 404/400 |
+| nginx-cred-harvest | 21, 15 | Web App Attack, Hacking | 2 Credential-File-Probes |
+| nginx-http-auth | 18, 21 | Brute-Force, Web App Attack | 3 HTTP-Auth-Fehler |
+| nginx-traversal | 15, 21 | Hacking, Web App Attack | 1 Directory-Traversal-Versuch |
+| nginx-sensitive-files | 15, 21 | Hacking, Web App Attack | 1 Sensitive-File-Probe (.env/.git) |
+| nginx-php-probes | 15, 21 | Hacking, Web App Attack | 2 PHP/Admin-Panel-Probes |
+| nginx-rce-attempts | 15, 21 | Hacking, Web App Attack | 1 RCE/Shell-Injection-Versuch |
+| recidive | 18 | Brute-Force (Wiederholungstaeter) | 3 Bans in 12h → 1 Woche |
 
 **API-Key:** `/etc/fail2ban/action.d/abuseipdb.local` (chmod 640, nicht in Git!)
 

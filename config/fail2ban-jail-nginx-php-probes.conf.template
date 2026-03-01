@@ -1,0 +1,15 @@
+# Ban PHP/admin panel probes (no PHP on this server)
+# 2 attempts = ban (catches single-page scanners too)
+
+[nginx-php-probes]
+enabled = true
+port = http,https
+filter = nginx-php-probes
+logpath = /var/log/nginx/access.log
+maxretry = 2
+findtime = 3600
+bantime = 1h
+
+action = nftables[type=allports]
+         pushover-notify[reason="PHP/admin panel probe - BLOCKED"]
+         abuseipdb[abuseipdb_category="15,21"]

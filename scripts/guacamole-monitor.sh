@@ -84,46 +84,11 @@ monitor_guacamole() {
     save_state "$total_lines"
 }
 
-# Monitor nginx access logs for suspicious patterns
+# Nginx attack detection is now handled by fail2ban jails:
+#   nginx-traversal, nginx-sensitive-files, nginx-php-probes, nginx-rce-attempts
+# These jails ban IPs AND send Pushover notifications with "BLOCKED" status.
 monitor_nginx() {
-    local nginx_log="/var/log/nginx/access.log"
-
-    if [[ ! -f "$nginx_log" ]]; then
-        return
-    fi
-
-    # Check for suspicious patterns in last 100 lines
-    tail -100 "$nginx_log" | while read -r line; do
-        local ip=$(echo "$line" | awk '{print $1}')
-
-        # SQL Injection attempts
-        if echo "$line" | grep -qiE "(union.*select|or.*1.*=.*1|drop.*table|insert.*into)"; then
-            log "ATTACK: SQL Injection attempt from $ip"
-            "$NOTIFY_SCRIPT" --type attack --reason "SQL Injection Attempt" \
-                --ip "$ip" --details "$(echo "$line" | cut -c1-200)"
-        fi
-
-        # Path traversal
-        if echo "$line" | grep -qE "(\.\./|\.\.\\\\|%2e%2e)"; then
-            log "ATTACK: Path traversal attempt from $ip"
-            "$NOTIFY_SCRIPT" --type attack --reason "Path Traversal Attempt" \
-                --ip "$ip" --details "$(echo "$line" | cut -c1-200)"
-        fi
-
-        # XSS attempts
-        if echo "$line" | grep -qiE "(<script|javascript:|onerror=|onload=)"; then
-            log "ATTACK: XSS attempt from $ip"
-            "$NOTIFY_SCRIPT" --type attack --reason "XSS Attempt" \
-                --ip "$ip" --details "$(echo "$line" | cut -c1-200)"
-        fi
-
-        # Scanner/Bot detection
-        if echo "$line" | grep -qiE "(nikto|sqlmap|nmap|masscan|acunetix)"; then
-            log "ATTACK: Security scanner detected from $ip"
-            "$NOTIFY_SCRIPT" --type attack --reason "Security Scanner Detected" \
-                --ip "$ip" --details "Automated scanning tool"
-        fi
-    done
+    return 0
 }
 
 # Service health check

@@ -62,3 +62,6 @@ abuseipdb.local
 
 # Docker volumes (local data)
 drive/
+
+# Deployment checklist with real IPs (use checklist.json.example)
+deployment/checklist.json

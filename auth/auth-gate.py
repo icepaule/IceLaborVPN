@@ -25,6 +25,7 @@ LISTEN_PORT = 8089
 SESSION_TIMEOUT = 3600 * 8  # 8 hours
 GUACAMOLE_API = 'http://127.0.0.1:8085/guacamole/api'
 SECRET_KEY = os.environ.get('AUTH_SECRET_KEY', secrets.token_hex(32))
+DEPLOYMENT_CHECKLIST_PATH = '/var/lib/icelabor-deployment/checklist.json'
 
 # In-memory session store
 sessions = {}
@@ -234,6 +235,48 @@ def fail2ban_ban(jail, ip, bantime=None):
     except Exception as e:
         return {'success': False, 'error': str(e)}
 
+# ==========================================================================
+# Tailscale / Headscale Status
+# ==========================================================================
+
+def get_tailscale_status():
+    """Get status of all Headscale nodes."""
+    try:
+        result = subprocess.run(
+            ['sudo', 'headscale', 'nodes', 'list', '-o', 'json'],
+            capture_output=True, text=True, timeout=10
+        )
+        if result.returncode != 0:
+            return {'error': 'Failed to query headscale'}
+
+        nodes = json.loads(result.stdout)
+        peers = []
+        for node in nodes:
+            last_seen_ts = node.get('last_seen', {}).get('seconds', 0)
+            if last_seen_ts and last_seen_ts > 0:
+                last_seen_str = time.strftime('%Y-%m-%d %H:%M:%S UTC', time.gmtime(last_seen_ts))
+            else:
+                last_seen_str = 'Never'
+
+            peers.append({
+                'name': node.get('given_name') or node.get('name', 'unknown'),
+                'ip': ', '.join(node.get('ip_addresses', [])),
+                'online': node.get('online', False),
+                'last_seen': last_seen_str,
+                'user': node.get('user', {}).get('name', ''),
+            })
+
+        online_count = sum(1 for p in peers if p['online'])
+        return {
+            'peers': peers,
+            'total': len(peers),
+            'online': online_count,
+            'offline': len(peers) - online_count,
+        }
+    except Exception as e:
+        print(f"[AUTH] tailscale status error: {e}")
+        return {'error': str(e)}
+
 def _is_valid_ip(ip):
     """Basic IP address validation."""
     import re
@@ -244,6 +287,106 @@ def _is_valid_ip(ip):
     if re.match(r'^[0-9a-fA-F:]+$', ip) and ':' in ip:
         return True
     return False
+
+# ==========================================================================
+# Deployment Checklist
+# ==========================================================================
+
+def _load_checklist():
+    """Load deployment checklist from JSON file."""
+    try:
+        with open(DEPLOYMENT_CHECKLIST_PATH, 'r') as f:
+            return json.load(f)
+    except FileNotFoundError:
+        return None
+    except json.JSONDecodeError as e:
+        print(f"[AUTH] checklist JSON error: {e}")
+        return None
+
+def _save_checklist(data):
+    """Write deployment checklist to JSON file."""
+    try:
+        with open(DEPLOYMENT_CHECKLIST_PATH, 'w') as f:
+            json.dump(data, f, indent=2)
+        return True
+    except Exception as e:
+        print(f"[AUTH] checklist save error: {e}")
+        return False
+
+def get_deployment_checklist():
+    """Load checklist and compute summary stats."""
+    data = _load_checklist()
+    if data is None:
+        return {'error': 'Checklist not available'}
+
+    total = 0
+    done = 0
+    skipped = 0
+    pending = 0
+    for phase in data.get('phases', []):
+        for group in phase.get('groups', []):
+            for step in group.get('steps', []):
+                total += 1
+                s = step.get('status', 'pending')
+                if s == 'done':
+                    done += 1
+                elif s == 'skipped':
+                    skipped += 1
+                else:
+                    pending += 1
+
+    progress_pct = round(((done + skipped) / total * 100) if total > 0 else 0)
+
+    return {
+        'phases': data.get('phases', []),
+        'summary': {
+            'total': total,
+            'done': done,
+            'skipped': skipped,
+            'pending': pending,
+            'progress_pct': progress_pct
+        }
+    }
+
+def update_deployment_step(step_id, new_status, username):
+    """Find step by ID and update its status."""
+    if new_status not in ('done', 'pending', 'skipped'):
+        return {'success': False, 'error': 'Invalid status'}
+
+    data = _load_checklist()
+    if data is None:
+        return {'success': False, 'error': 'Checklist not available'}
+
+    found = False
+    for phase in data.get('phases', []):
+        for group in phase.get('groups', []):
+            for step in group.get('steps', []):
+                if step.get('id') == step_id:
+                    step['status'] = new_status
+                    if new_status in ('done', 'skipped'):
+                        step['completed_at'] = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+                        step['completed_by'] = username
+                    else:
+                        step['completed_at'] = None
+                        step['completed_by'] = None
+                    found = True
+                    break
+            if found:
+                break
+        if found:
+            break
+
+    if not found:
+        return {'success': False, 'error': f'Step {step_id} not found'}
+
+    data['last_updated'] = time.strftime('%Y-%m-%dT%H:%M:%SZ', time.gmtime())
+    data['updated_by'] = username
+
+    if not _save_checklist(data):
+        return {'success': False, 'error': 'Failed to save checklist'}
+
+    print(f"[AUTH] User {username} set step {step_id} to {new_status}")
+    return {'success': True, 'step_id': step_id, 'status': new_status}
 
 # HTML Templates
 LOGIN_PAGE = '''<!DOCTYPE html>
@@ -566,6 +709,26 @@ class AuthHandler(BaseHTTPRequestHandler):
             status = get_fail2ban_status()
             self.send_json(200, status)
 
+        elif path == '/auth/tailscale':
+            # Tailscale/Headscale status - requires authentication
+            session_id = self.get_cookie('icelabor_session')
+            if not verify_session(session_id):
+                self.send_json(401, {'error': 'Not authenticated'})
+                return
+
+            status = get_tailscale_status()
+            self.send_json(200, status)
+
+        elif path == '/auth/deployment':
+            # Deployment checklist - requires authentication
+            session_id = self.get_cookie('icelabor_session')
+            if not verify_session(session_id):
+                self.send_json(401, {'error': 'Not authenticated'})
+                return
+
+            result = get_deployment_checklist()
+            self.send_json(200, result)
+
         else:
             self.send_response(404)
             self.end_headers()
@@ -624,6 +787,30 @@ class AuthHandler(BaseHTTPRequestHandler):
             user = get_session_user(session_id)
             print(f"[AUTH] User {user} requested ban of {ip} in {jail}")
             result = fail2ban_ban(jail, ip)
+            self.send_json(200 if result['success'] else 400, result)
+            return
+
+        elif path == '/auth/deployment':
+            # Update deployment step - requires authentication
+            session_id = self.get_cookie('icelabor_session')
+            if not verify_session(session_id):
+                self.send_json(401, {'error': 'Not authenticated'})
+                return
+
+            try:
+                data = json.loads(body.decode('utf-8'))
+                step_id = data.get('step_id', '')
+                new_status = data.get('status', '')
+            except (json.JSONDecodeError, AttributeError):
+                self.send_json(400, {'error': 'Invalid JSON'})
+                return
+
+            if not step_id or not new_status:
+                self.send_json(400, {'error': 'Missing step_id or status'})
+                return
+
+            user = get_session_user(session_id)
+            result = update_deployment_step(step_id, new_status, user)
             self.send_json(200 if result['success'] else 400, result)
             return
 

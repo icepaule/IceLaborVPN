@@ -1,0 +1,177 @@
+{
+  "version": "1.0",
+  "created": "2026-03-01T00:00:00Z",
+  "description": "IceLaborVPN deployment checklist - replace placeholder IPs with your actual values",
+  "phases": [
+    {
+      "id": "phase-2",
+      "title": "Schritt 2: Subnet Router einrichten",
+      "description": "Tailscale Subnet Router auf dem internen Gateway konfigurieren",
+      "groups": [
+        {
+          "target": "internal-gateway",
+          "os": "Linux",
+          "ip": "<GATEWAY_LAN_IP>",
+          "ts_ip": "<GATEWAY_TS_IP>",
+          "steps": [
+            {
+              "id": "s2-01",
+              "title": "Subnet Routes advertisen",
+              "command": "tailscale set --advertise-routes=<SUBNET1>,<SUBNET2>,<SUBNET3>",
+              "run_on": "internal-gateway",
+              "status": "pending",
+              "note": "Alle internen Subnetze angeben"
+            },
+            {
+              "id": "s2-02",
+              "title": "Routes in Headscale auflisten",
+              "command": "headscale routes list",
+              "run_on": "headscale-gw",
+              "status": "pending"
+            },
+            {
+              "id": "s2-03",
+              "title": "Routes in Headscale aktivieren",
+              "command": "headscale routes enable -r <ROUTE_ID>",
+              "run_on": "headscale-gw",
+              "status": "pending",
+              "note": "Fuer jede Route einzeln ausfuehren"
+            },
+            {
+              "id": "s2-04",
+              "title": "Konnektivitaet testen",
+              "command": "ping <ROUTER_IP>",
+              "run_on": "headscale-gw",
+              "status": "pending",
+              "note": "Vom Headscale-GW ein internes Ziel anpingen"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-2b",
+      "title": "Schritt 2b: Nginx Location-Blocks Netzwerkgeraete",
+      "description": "Reverse-Proxy Konfiguration fuer interne Netzwerkgeraete",
+      "groups": [
+        {
+          "target": "headscale-gw",
+          "os": "Linux",
+          "steps": [
+            {
+              "id": "s2b-01",
+              "title": "Fritz!Box Proxy einrichten",
+              "command": "# Add location /fritzbox/ { proxy_pass http://<ROUTER_IP>/; } to nginx config",
+              "run_on": "headscale-gw",
+              "status": "pending"
+            },
+            {
+              "id": "s2b-02",
+              "title": "UniFi Proxy einrichten",
+              "command": "# Add location /unifi/ { proxy_pass https://<UNIFI_IP>/; } to nginx config",
+              "run_on": "headscale-gw",
+              "status": "pending"
+            },
+            {
+              "id": "s2b-03",
+              "title": "Switch Backbone Proxy einrichten",
+              "command": "# Add location /sw-backbone/ { proxy_pass http://<SWITCH_BACKBONE_IP>/; } to nginx config",
+              "run_on": "headscale-gw",
+              "status": "pending"
+            },
+            {
+              "id": "s2b-04",
+              "title": "Switch AZ Proxy einrichten",
+              "command": "# Add location /sw-az/ { proxy_pass http://<SWITCH_AZ_IP>/; } to nginx config",
+              "run_on": "headscale-gw",
+              "status": "pending"
+            },
+            {
+              "id": "s2b-05",
+              "title": "Switch Keller Proxy einrichten",
+              "command": "# Add location /sw-keller/ { proxy_pass http://<SWITCH_KELLER_IP>/; } to nginx config",
+              "run_on": "headscale-gw",
+              "status": "pending"
+            },
+            {
+              "id": "s2b-06",
+              "title": "Nginx reload und testen",
+              "command": "nginx -t && systemctl reload nginx",
+              "run_on": "headscale-gw",
+              "status": "pending"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-3",
+      "title": "Schritt 3: Neue Tailscale Nodes",
+      "description": "Weitere Systeme ins Tailscale-Netz einbinden",
+      "groups": [
+        {
+          "target": "example-node",
+          "os": "Linux",
+          "ip": "<NODE_LAN_IP>",
+          "steps": [
+            {
+              "id": "s3-ex-01",
+              "title": "Authkey generieren",
+              "command": "headscale preauthkeys create -u default -e 1h --reusable",
+              "run_on": "headscale-gw",
+              "status": "pending"
+            },
+            {
+              "id": "s3-ex-02",
+              "title": "Tailscale installieren",
+              "command": "curl -fsSL https://tailscale.com/install.sh | sh",
+              "run_on": "example-node",
+              "status": "pending"
+            },
+            {
+              "id": "s3-ex-03",
+              "title": "Tailscale registrieren",
+              "command": "tailscale up --login-server=https://headscale.example.com --authkey=<KEY>",
+              "run_on": "example-node",
+              "status": "pending"
+            },
+            {
+              "id": "s3-ex-04",
+              "title": "Konnektivitaet pruefen",
+              "command": "tailscale status",
+              "run_on": "example-node",
+              "status": "pending"
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "id": "phase-3b",
+      "title": "Schritt 3b: Nginx Location-Blocks neue Services",
+      "description": "Reverse-Proxy Konfiguration fuer neue Services",
+      "groups": [
+        {
+          "target": "headscale-gw",
+          "os": "Linux",
+          "steps": [
+            {
+              "id": "s3b-01",
+              "title": "Service A Proxy einrichten",
+              "command": "# Add location /service-a/ { proxy_pass http://<SERVICE_A_IP>:<PORT>/; } to nginx config",
+              "run_on": "headscale-gw",
+              "status": "pending"
+            },
+            {
+              "id": "s3b-02",
+              "title": "Nginx reload und testen",
+              "command": "nginx -t && systemctl reload nginx",
+              "run_on": "headscale-gw",
+              "status": "pending"
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

@@ -22,10 +22,13 @@ IceLaborVPN provides secure, browser-based remote access to isolated malware ana
 - **Session Recording** - Full audit trail for compliance
 - **Progressive Brute-Force Protection** - Multi-layer defense with escalating ban times (5 min → 15 min → 60 min)
 - **Threat Intelligence Blocklists** - Proactive blocking via 6 OSINT feeds (Spamhaus, Tor, Emerging Threats, Blocklist.de, AbuseIPDB)
-- **AbuseIPDB Integration** - All 7 fail2ban jails report malicious IPs to community threat intelligence
+- **AbuseIPDB Integration** - All 11 fail2ban jails report malicious IPs to community threat intelligence
 - **Fail2ban Web Dashboard** - View and manage bans directly from the portal (after login)
-- **Real-time Alerts** - Pushover notifications with anti-flood deduplication
+- **Tailscale Network Dashboard** - Live node status with online/offline indicators
+- **Deployment Checklist** - Interactive deployment tracker with progress bar and audit trail
+- **Real-time Alerts** - Pushover notifications with anti-flood deduplication and per-jail reason messages
 - **Scanner Detection** - Automatic detection and banning of nmap/vulnerability scanners
+- **Attack Detection** - Directory traversal, sensitive file probes, PHP/admin probes, RCE attempts auto-banned
 - **DORA/MITRE Compliant** - Comprehensive documentation for regulators
 
 ---
@@ -182,9 +185,13 @@ The script scans all online nodes for SSH (22), RDP (3389), VNC (5900) and manag
 | TLS 1.3 | Transport encryption |
 | nginx Rate Limiting | 5 logins/min, 30 req/sec |
 | Guacamole Brute-Force | 5 attempts → 5 min ban |
-| Fail2ban (7 Jails) | Progressive banning: 5 min → 15 min → 60 min → 1 week (recidive) |
+| Fail2ban (11 Jails) | Progressive banning: 5 min → 15 min → 60 min → 1 week (recidive) |
 | Scanner Detection | nmap/vuln scanner auto-ban on all ports |
 | Credential Harvesting Detection | .env/.git probing → instant ban (15 min → 1h → 24h) |
+| Directory Traversal Detection | `../`, `%2e%2e`, `/etc/passwd` → instant 1h ban |
+| Sensitive File Probe Detection | `.env`, `.git/`, `wp-config`, credentials → instant 1h ban |
+| PHP/Admin Panel Detection | `.php`, `phpmyadmin`, `/admin/` → 2 attempts → 1h ban |
+| RCE/Shell Injection Detection | `cgi-bin`, Log4Shell/JNDI, scanner user-agents → instant 1h ban |
 | TOTP/2FA | Mandatory second factor |
 | Session Timeout | 60 minutes inactivity |
 
@@ -196,6 +203,24 @@ After logging in, the portal displays a live Fail2ban status panel:
 - **Per-Jail Details** - Expandable list of banned IPs per jail
 - **Management** - Unban or re-ban IPs directly from the browser
 - **Progressive Banning** - Repeat offenders get escalating ban times (5 min → 15 min → 60 min)
+
+### Tailscale Network Dashboard
+
+Live view of all Headscale/Tailscale nodes:
+
+- **Node Status** - Online/offline indicators with last-seen timestamps
+- **Network Overview** - Total, online, and offline node counts
+- **Auto-Refresh** - Manual refresh button to update status
+
+### Deployment Checklist
+
+Interactive deployment tracker for multi-step infrastructure rollouts:
+
+- **Phases & Groups** - Steps organized by deployment phase and target system
+- **Progress Tracking** - Visual progress bar with done/pending/skipped counters
+- **Status Toggle** - Click checkboxes to mark steps done, skip, or revert
+- **Audit Trail** - Timestamps and usernames for each status change
+- **Collapsible** - Completed phases auto-collapse, active phases stay open
 
 ### Monitoring & Alerting
 
@@ -234,17 +259,21 @@ systemctl list-timers 'icelabor-blocklist*'
 
 ### AbuseIPDB Integration
 
-All 7 fail2ban jails automatically report banned IPs to [AbuseIPDB](https://www.abuseipdb.com/) with appropriate attack categories:
+All 11 fail2ban jails automatically report banned IPs to [AbuseIPDB](https://www.abuseipdb.com/) with appropriate attack categories:
 
-| Jail | AbuseIPDB Categories |
-|------|---------------------|
-| sshd | Brute-Force, SSH |
-| guacamole | Brute-Force, Web App Attack |
-| nginx-limit-req | Web App Attack, Bad Web Bot |
-| nginx-scan | Port Scan, Web App Attack |
-| nginx-cred-harvest | Web App Attack, Hacking |
-| nginx-http-auth | Brute-Force, Web App Attack |
-| recidive | Brute-Force (repeat offender) |
+| Jail | AbuseIPDB Categories | Trigger |
+|------|---------------------|---------|
+| sshd | Brute-Force, SSH | 5 failed attempts |
+| guacamole | Brute-Force, Web App Attack | 5 failed attempts |
+| nginx-limit-req | Web App Attack, Bad Web Bot | 10 rate limit violations |
+| nginx-scan | Port Scan, Web App Attack | 5 suspicious 404/400 responses |
+| nginx-cred-harvest | Web App Attack, Hacking | 2 credential file probes |
+| nginx-http-auth | Brute-Force, Web App Attack | 3 HTTP auth failures |
+| nginx-traversal | Hacking, Web App Attack | 1 directory traversal attempt |
+| nginx-sensitive-files | Hacking, Web App Attack | 1 sensitive file probe |
+| nginx-php-probes | Hacking, Web App Attack | 2 PHP/admin panel probes |
+| nginx-rce-attempts | Hacking, Web App Attack | 1 RCE/shell injection attempt |
+| recidive | Brute-Force (repeat offender) | 3 bans in 12 hours → 1 week ban |
 
 ### Compliance
 
@@ -278,7 +307,8 @@ IceLaborVPN/
 │   ├── deploy-tailscale-windows.ps1  # Windows deployment
 │   ├── deploy-tailscale-linux.sh     # Linux deployment
 │   ├── deploy-tailscale-macos.sh     # macOS deployment
-│   └── headscale-guacamole-sync.py   # Auto-sync connections
+│   ├── headscale-guacamole-sync.py   # Auto-sync connections
+│   └── checklist.json.example        # Deployment checklist template
 ├── scripts/
 │   ├── install.sh         # Main installer
 │   ├── backup.sh          # Backup script
@@ -287,10 +317,14 @@ IceLaborVPN/
 │   ├── headscale-onboard.sh # Node onboarding
 │   └── update-blocklists.sh # Threat intelligence blocklist manager
 ├── config/                # Configuration templates
-│   ├── fail2ban-jail.conf.template    # All 7 jails (nftables + AbuseIPDB + Pushover)
-│   ├── fail2ban-filter-nginx-scan.conf # Scanner detection filter
+│   ├── fail2ban-jail.conf.template    # All 11 jails (nftables + AbuseIPDB + Pushover)
+│   ├── fail2ban-filter-nginx-scan.conf         # Scanner detection filter
 │   ├── fail2ban-filter-nginx-cred-harvest.conf # Credential harvesting filter
-│   ├── fail2ban-action-pushover.conf  # Pushover notification action
+│   ├── fail2ban-filter-nginx-traversal.conf    # Directory traversal filter
+│   ├── fail2ban-filter-nginx-sensitive-files.conf # Sensitive file probe filter
+│   ├── fail2ban-filter-nginx-php-probes.conf   # PHP/admin panel probe filter
+│   ├── fail2ban-filter-nginx-rce-attempts.conf # RCE/shell injection filter
+│   ├── fail2ban-action-pushover.conf  # Pushover notification action (configurable reason)
 │   ├── fail2ban-sudoers-webui        # Sudoers for web UI management
 │   ├── blocklist-whitelist.conf.example # Blocklist whitelist template
 │   ├── logrotate-icelaborvpn.conf    # Service log rotation config
